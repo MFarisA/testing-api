@@ -30,8 +30,6 @@
         "DB_PORT": "5432",
         "DB_DATABASE": "postgres",
         "DB_USERNAME": "postgres.tjscxtntrvnvdkmwoega",
-        "DB_PASSWORD" : "3JfOlyH7NZ2mzGHh"
+        "DB_PASSWORD": "3JfOlyH7NZ2mzGHh"
     }
 }
-
-
