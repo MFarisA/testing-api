@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RecentTrailer extends Model
+{
+    use HasFactory;
+
+    protected $table = 'v2_recenttrailer';
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'judul',
+        'date',
+        'youtube_id',
+    ];
+}
