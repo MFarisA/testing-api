@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
+use Faker\Factory as Faker;
+use Illuminate\Support\Str;
 
 class BeritaSeeder extends Seeder
 {
@@ -14,6 +16,8 @@ class BeritaSeeder extends Seeder
      */
     public function run(): void
     {
+        $faker = Faker::create();
+
         $idUploader = DB::table('users')->exists() ? DB::table('users')->value('id') : null;
         $idKategori = DB::table('tb_kategori')->exists() ? DB::table('tb_kategori')->value('id_kategori') : null;
         $programId = DB::table('tb_program')->exists() ? DB::table('tb_program')->value('id_program') : null;
@@ -23,29 +27,39 @@ class BeritaSeeder extends Seeder
             return;
         }
 
-        DB::table('tb_berita')->insertOrIgnore([
-            'judul' => 'Judul Berita Pertama',
-            'path_media' => '/uploads/berita/berita-pertama.jpg',
-            'link' => 'https://example.com/berita-pertama',
-            'filename' => 'berita-pertama.jpg',
-            'deskripsi' => 'Ini adalah deskripsi berita pertama.',
-            'waktu' => now(),
-            'id_uploader' => $idUploader,
-            'id_kategori' => $idKategori,
-            'publish' => 1,
-            'open' => 0,
-            'cover' => '/uploads/cover/berita-pertama.jpg',
-            'keyword' => 'berita, pertama, headline',
-            'editor' => 1,
-            'library' => 0,
-            'redaktur' => 1,
-            'waktu_publish' => Carbon::now(),
-            'program_id' => $programId,
-            'type' => 'video',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $data = [];
 
-        $this->command->info('BeritaSeeder berhasil dijalankan.');
+        for ($i = 0; $i < 23; $i++) {
+            $judul = $faker->sentence(5);
+            $slug = Str::slug($judul);
+
+            $data[] = [
+                'judul' => $judul,
+                'path_media' => '/uploads/berita/' . $slug . '.jpg',
+                'link' => $faker->url,
+                'filename' => $slug . '.jpg',
+                'deskripsi' => $faker->paragraph,
+                'waktu' => now(),
+                'id_uploader' => $idUploader,
+                'id_kategori' => $idKategori,
+                'publish' => $faker->boolean,
+                'open' => $faker->boolean,
+                'cover' => '/uploads/cover/' . $slug . '.jpg',
+                'keyword' => implode(', ', $faker->words(3)),
+                'editor' => $faker->boolean,
+                'library' => $faker->boolean,
+                'redaktur' => $faker->boolean,
+                'waktu_publish' => Carbon::now()->addDays(rand(0, 10)),
+                'program_id' => $programId,
+                'type' => $faker->randomElement(['video', 'audio', 'artikel']),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        DB::table('tb_berita')->insertOrIgnore($data);
+
+        $this->command->info('BeritaSeeder berhasil membuat 23 data menggunakan Faker.');
     }
+
 }
