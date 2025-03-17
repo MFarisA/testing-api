@@ -1,10 +1,20 @@
 <?php
 
-use Laravel\Passport\Passport;
+namespace App\Providers;
+
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AuthServiceProvider extends ServiceProvider
 {
+    /**
+     * The policy mappings for the application.
+     */
+    protected $policies = [];
+
+    /**
+     * Register any authentication / authorization services.
+     */
     public function boot()
     {
         $this->registerPolicies();

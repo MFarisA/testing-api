@@ -5,7 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Faker\Factory as Faker;
+
 
 
 class UserSeeder extends Seeder
@@ -15,17 +16,18 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->updateOrInsert([
-            'id' => 1 // pastikan user id 1 ada
-        ], [
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'email_verified_at' => now(),
-            'password' => Hash::make('password123'),
-            'remember_token' => Str::random(10),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
+        $faker = Faker::create();
 
+        foreach (range(1, 23) as $index) {
+            DB::table('users')->insert([
+                'name' => $faker->name,
+                'email' => $faker->unique()->safeEmail,
+                'email_verified_at' => now(),
+                'password' => Hash::make('password123'), // kamu bisa tetap hardcode password
+                'remember_token' => $faker->uuid,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
 }

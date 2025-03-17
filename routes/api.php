@@ -14,8 +14,11 @@ use App\Http\Controllers\Api\OurProgramsController;
 use App\Http\Controllers\Api\RecentTrailerController;
 use App\Http\Controllers\Api\SeputarDinusSliderController;
 use App\Http\Controllers\Api\SeputarDinusSlidesTitleController;
-use App\Http\Controllers\AuthController;
+// use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\UserController;
+use Laravel\Passport\Http\Controllers\AccessTokenController;
+use Illuminate\Http\Request;
 
 Route::apiResource('kategori', KategoriController::class);
 Route::apiResource('berita', BeritaController::class);
@@ -34,11 +37,17 @@ Route::prefix('home')->group(function () {
     Route::apiResource('who-we-are', HomeWhoWeAreController::class);
 });
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/oauth/token', [AccessTokenController::class, 'issueToken'])
+    ->middleware(['throttle'])
+    ->name('passport.token');
+
+// Route::post('/register', [AuthController::class, 'register']);
+// Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:api')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [UserController::class, 'profile']);
+    // Route::post('/logout', [AuthController::class, 'logout']);
+    Route::apiResource('users', UserController::class);
 });
 
 Route::prefix('roles')->controller(RoleController::class)->group(function () {

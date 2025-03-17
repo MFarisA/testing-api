@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Faker\Factory as Faker;
 
 class ProgramSeeder extends Seeder
 {
@@ -12,30 +13,26 @@ class ProgramSeeder extends Seeder
      * Run the database seeds.
      */
     public function run(): void
-    {
-        DB::table('tb_program')->insert([
-            [
-                'judul' => 'Program Talkshow Inspirasi',
-                'video' => '/videos/talkshow-inspirasi.mp4',
-                'thumbnail' => '/uploads/programs/talkshow-thumbnail.jpg',
-                'deskripsi' => 'Program talkshow yang menghadirkan narasumber inspiratif dari berbagai bidang.',
-                'deskripsi_pendek' => 'Talkshow bersama narasumber inspiratif.',
-                'id_acara' => 1, // Pastikan id_acara=1 ada di tabel tb_acara
-                'tanggal' => '2025-03-20',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'judul' => 'Program Liputan Khusus',
-                'video' => '/videos/liputan-khusus.mp4',
-                'thumbnail' => '/uploads/programs/liputan-thumbnail.jpg',
-                'deskripsi' => 'Liputan khusus tentang isu-isu hangat dan mendalam.',
-                'deskripsi_pendek' => 'Liputan mendalam tentang isu terkini.',
-                'id_acara' => 2, // id_acara=2 juga harus tersedia di tb_acara
-                'tanggal' => '2025-03-25',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+{
+    $faker = Faker::create();
+    $data = [];
+
+    for ($i = 1; $i <= 23; $i++) {
+        $data[] = [
+            'judul' => 'Program ' . ucfirst($faker->word),
+            'video' => '/videos/' . $faker->slug . '.mp4',
+            // 'thumbnail' => '/uploads/programs/' . $faker->slug . '-thumbnail.jpg',
+            'thumbnail' => '/image-testing/burung-perkasa.jpg',
+            'deskripsi' => $faker->paragraph(2),
+            'deskripsi_pendek' => $faker->sentence,
+            'id_acara' => $faker->numberBetween(1, 5), // pastikan id_acara 1-5 tersedia di tb_acara
+            'tanggal' => $faker->date('Y-m-d', '2025-12-31'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
     }
+
+    DB::table('tb_program')->insert($data);
+}
+
 }

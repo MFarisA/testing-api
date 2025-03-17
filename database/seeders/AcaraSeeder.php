@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Faker\Factory as Faker;
 
 class AcaraSeeder extends Seeder
 {
@@ -13,7 +15,10 @@ class AcaraSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('tb_acara')->insert([
+        $faker = Faker::create();
+
+        // 3 data statis dulu
+        $data = [
             [
                 'nama_acara' => 'Acara Ulang Tahun Perusahaan',
                 'thumbnail_acara' => '/uploads/acara/ulang-tahun.jpg',
@@ -38,7 +43,25 @@ class AcaraSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        // Tambahkan 20 data dummy dengan Faker
+        for ($i = 0; $i < 20; $i++) {
+            $namaAcara = $faker->sentence(3); // Contoh: "Konferensi Teknologi Global"
+            $slug = Str::slug($namaAcara);
+
+            $data[] = [
+                'nama_acara' => $namaAcara,
+                'thumbnail_acara' => $faker->imageUrl(640, 480, 'events', true, 'acara'), // gambar dummy
+                'description' => $faker->paragraph,
+                'path' => '/events/' . $slug,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        // Insert seluruh data
+        DB::table('tb_acara')->insert($data);
     }
 
 }

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Faker\Factory as Faker;
 
 class SptdinusSlidesTitleSeeder extends Seeder
 {
@@ -13,26 +14,18 @@ class SptdinusSlidesTitleSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('v2_sptdinus_slides_title')->insert([
-            [
-                'judul' => 'Program Unggulan',
-                'urutan' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'judul' => 'Event Spesial',
-                'urutan' => 2,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'judul' => 'Pengumuman Penting',
-                'urutan' => 3,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
-    }
+        $faker = Faker::create();
+        $data = [];
 
+        for ($i = 1; $i <= 23; $i++) {
+            $data[] = [
+                'judul' => $faker->catchPhrase(),
+                'urutan' => $i,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        DB::table('v2_sptdinus_slides_title')->insert($data);
+    }
 }
