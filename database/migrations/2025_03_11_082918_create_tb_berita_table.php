@@ -29,7 +29,8 @@ return new class extends Migration
             $table->tinyInteger('library')->default(0);
             $table->tinyInteger('redaktur')->default(0);
             $table->dateTime('waktu_publish')->default('0000-00-00 00:00:00');
-            $table->foreignId('program_id')->nullable()->constrained('tb_program')->onDelete('set null');
+            // $table->foreignId('program_id')->nullable()->constrained('tb_program')->onDelete('set null');
+            $table->foreignId('program_id')->references('id_program')->on('tb_program')->onDelete('cascade');
             $table->enum('type', ['video', 'cetak', 'old'])->nullable();
             $table->timestamps();
         });

@@ -15,9 +15,27 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // User::factory()->create([
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        // ]);
+        $this->call([
+            UserSeeder::class,
+            RolePermissionSeeder::class,
+            KategoriSeeder::class,
+            // BeritaSeeder::class,
+            MarketingSeeder::class,
+            AcaraSeeder::class,
+            ProgramSeeder::class,
+            OurexpertiseSeeder::class,
+            Ourexpertise2Seeder::class,
+            HomeSliderSeeder::class,
+            HomeWhoWeAreSeeder::class,
+            OurProgramsSeeder::class,
+            RecentTrailerSeeder::class,
+            SptdinusSliderSeeder::class,
+            SptdinusSlidesTitleSeeder::class,
+            SptudinusSidebarBannerSeeder::class,
         ]);
     }
 }
