@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             RolePermissionSeeder::class,
             KategoriSeeder::class,
-            // BeritaSeeder::class,
+            BeritaSeeder::class,
             MarketingSeeder::class,
             AcaraSeeder::class,
             ProgramSeeder::class,
