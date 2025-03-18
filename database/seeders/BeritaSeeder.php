@@ -61,5 +61,4 @@ class BeritaSeeder extends Seeder
 
         $this->command->info('BeritaSeeder berhasil membuat 23 data menggunakan Faker.');
     }
-
 }
