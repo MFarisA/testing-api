@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\SeputarDinusSlidesTitleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
+use App\Models\SeputarDinusSidebarBanner;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,7 @@ Route::apiResource('program', ProgramController::class);
 Route::apiResource('our-programs', OurProgramsController::class);
 Route::apiResource('recent-trailer', RecentTrailerController::class);
 Route::apiResource('seputar-dinus-slider', SeputarDinusSliderController::class);
+Route::apiResource('seputar-dinus-sidebar-banner', SeputarDinusSidebarBanner::class);
 Route::apiResource('seputar-dinus-slides-title', SeputarDinusSlidesTitleController::class);
 
 Route::prefix('home')->group(function () {
