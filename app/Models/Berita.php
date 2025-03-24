@@ -35,7 +35,14 @@ class Berita extends Model
     protected $casts = [
         'waktu' => 'datetime',
         'waktu_publish' => 'datetime',
+        'publish' => 'boolean',
+        'open' => 'boolean',
+        'editor' => 'boolean',
+        'library' => 'boolean',
+        'redaktur' => 'boolean',
     ];
+
+    protected $with = ['kategori']; 
 
     public function uploader()
     {
@@ -44,11 +51,11 @@ class Berita extends Model
 
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'id_kategori');
+        return $this->belongsTo(Kategori::class, 'id_kategori', 'id_kategori');
     }
 
     public function program()
     {
-        return $this->belongsTo(Program::class, 'program_id');
+        return $this->belongsTo(Program::class, 'program_id', 'id_program');
     }
 }

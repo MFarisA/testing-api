@@ -81,7 +81,11 @@ return [
      * ],
      * ```
      */
-    'servers' => null,
+    'servers' => [
+        'Local' => 'api',
+        'Live' => 'https://apidev.tvku.tv/api',
+        'Prod' => 'https://apidev.tvku.tv/api',
+    ],
 
     'middleware' => [
         'web',

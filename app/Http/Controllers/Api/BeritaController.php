@@ -6,15 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\Berita;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\Paginator;
 
 class BeritaController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource with pagination.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Berita::all(), Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20);
+        $currentPage = $request->input('current_page', 1);
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $berita = Berita::with('kategori')->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $berita->currentPage(),
+            'per_page' => $berita->perPage(),
+            'total' => $berita->total(),
+            'last_page' => $berita->lastPage(),
+            'next_page_url' => $berita->nextPageUrl(),
+            'prev_page_url' => $berita->previousPageUrl(),
+            'data' => $berita->items(),
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -39,7 +57,7 @@ class BeritaController extends Controller
             'library' => 'nullable|integer|min:0|max:1',
             'redaktur' => 'nullable|integer|min:0|max:1',
             'waktu_publish' => 'nullable|date_format:Y-m-d H:i:s',
-            'program_id' => 'nullable|exists:tb_program,id',
+            'program_id' => 'nullable|exists:tb_program,id_program',
             'type' => 'nullable|in:video,cetak,old',
         ]);
 
@@ -48,11 +66,11 @@ class BeritaController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource with kategori.
      */
     public function show($id)
     {
-        $berita = Berita::find($id);
+        $berita = Berita::with('kategori')->find($id);
         if (!$berita) {
             return response()->json(['message' => 'Berita not found'], Response::HTTP_NOT_FOUND);
         }
@@ -86,7 +104,7 @@ class BeritaController extends Controller
             'library' => 'nullable|integer|min:0|max:1',
             'redaktur' => 'nullable|integer|min:0|max:1',
             'waktu_publish' => 'nullable|date_format:Y-m-d H:i:s',
-            'program_id' => 'nullable|exists:tb_program,id',
+            'program_id' => 'nullable|exists:tb_program,id_program',
             'type' => 'nullable|in:video,cetak,old',
         ]);
 

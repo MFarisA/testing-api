@@ -21,7 +21,6 @@ use App\Http\Controllers\Api\UserController;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Illuminate\Http\Request;
 
-
 Route::apiResource('kategori', KategoriController::class);
 Route::apiResource('berita', BeritaController::class);
 Route::apiResource('iklan', IklanController::class);
