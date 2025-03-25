@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Acara;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class AcaraController extends Controller
 {
@@ -24,12 +25,24 @@ class AcaraController extends Controller
     {
         $request->validate([
             'nama_acara' => 'nullable|string|max:250',
-            'thumbnail_acara' => 'nullable|string|max:1000',
+            'thumbnail_acara' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', 
             'description' => 'nullable|string|max:1000',
             'path' => 'nullable|string|max:255',
         ]);
 
-        $acara = Acara::create($request->all());
+        $data = $request->except('thumbnail_acara');
+
+        if ($request->hasFile('thumbnail_acara')) {
+            $file = $request->file('thumbnail_acara');
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+
+            $data['thumbnail_acara'] = $filePath; 
+        }
+
+        $acara = Acara::create($data);
         return response()->json($acara, Response::HTTP_CREATED);
     }
 
@@ -57,12 +70,29 @@ class AcaraController extends Controller
 
         $request->validate([
             'nama_acara' => 'nullable|string|max:250',
-            'thumbnail_acara' => 'nullable|string|max:1000',
+            'thumbnail_acara' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
             'description' => 'nullable|string|max:1000',
             'path' => 'nullable|string|max:255',
         ]);
 
-        $acara->update($request->all());
+        $data = $request->except('thumbnail_acara');
+
+        if ($request->hasFile('thumbnail_acara')) {
+            $file = $request->file('thumbnail_acara');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+
+            if ($acara->thumbnail_acara) {
+                $oldFilePath = $acara->thumbnail_acara;
+                Storage::disk('tvku_storage')->delete($oldFilePath);
+            }
+
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+
+            $data['thumbnail_acara'] = $filePath; 
+        }
+
+        $acara->update($data);
         return response()->json($acara, Response::HTTP_OK);
     }
 
@@ -74,6 +104,11 @@ class AcaraController extends Controller
         $acara = Acara::where('id_acara', $id_acara)->first();
         if (!$acara) {
             return response()->json(['message' => 'Acara not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($acara->thumbnail_acara) {
+            $filePath = $acara->thumbnail_acara;
+            Storage::disk('tvku_storage')->delete($filePath);
         }
 
         $acara->delete();

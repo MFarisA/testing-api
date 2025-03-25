@@ -11,18 +11,26 @@ use Illuminate\Pagination\Paginator;
 class BeritaController extends Controller
 {
     /**
-     * Display a listing of the resource with pagination.
+     * Display a listing of the resource with pagination and search.
      */
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 20);
         $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null);
 
         Paginator::currentPageResolver(function () use ($currentPage) {
             return $currentPage;
         });
 
-        $berita = Berita::with('kategori')->paginate($perPage);
+        $query = Berita::with('kategori');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%')->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
+        }
+
+        $berita = $query->paginate($perPage);
 
         return response()->json([
             'current_page' => $berita->currentPage(),
