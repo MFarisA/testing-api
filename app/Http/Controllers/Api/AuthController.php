@@ -37,19 +37,9 @@ class AuthController extends Controller
             'token_type' => 'Bearer'
         ]);
     }
-
-    //     public function login(Request $request)
+    // public function login(Request $request)
     // {
-    //     $validator = Validator::make($request->all(), [
-    //         'email' => 'required|string|email',
-    //         'password' => 'required|string|min:8',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json($validator->errors(), 422);
-    //     }
-
-    //     if (!Auth::attempt($request->only('email', 'password'))) {
+    //     if (! Auth::attempt($request->only('email', 'password'))) {
     //         return response()->json([
     //             'message' => 'Unauthorized'
     //         ], 401);
@@ -57,32 +47,38 @@ class AuthController extends Controller
 
     //     $user = User::where('email', $request->email)->firstOrFail();
 
-    //     $token = $user->createToken($request->device_name)->plainTextToken; // Menggunakan device_name
+    //     $token = $user->createToken('auth_token')->plainTextToken;
 
     //     return response()->json([
     //         'message' => 'Login success',
-    //         'data' => $user, // Opsional: tambahkan data user
     //         'access_token' => $token,
     //         'token_type' => 'Bearer'
     //     ]);
     // }
     public function login(Request $request)
     {
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        $credentials = $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string'
+        ]);
+
+        if (!Auth::attempt($credentials)) {
             return response()->json([
+                'status' => false,
                 'message' => 'Unauthorized'
             ], 401);
         }
 
+        // $user = Auth::user();
         $user = User::where('email', $request->email)->firstOrFail();
-
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login success',
+            'status' => true,
+            'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer'
-        ]);
+        ], 200);
     }
 
     public function logoutUser(Request $request)
