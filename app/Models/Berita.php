@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Berita extends Model
 {
@@ -57,5 +58,21 @@ class Berita extends Model
     public function program()
     {
         return $this->belongsTo(Program::class, 'program_id', 'id_program');
+    }
+
+    public function getCoverAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url');
+        $thumbnailPath = config('app.tvku_storage.thumbnail_berita_path');
+    
+        return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . $value : null;
+    }
+    
+    public function getPathMediaAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url');
+        $thumbnailPath = config('app.tvku_storage.thumbnail_berita_path');
+    
+        return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . $value : null;
     }
 }

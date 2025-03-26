@@ -1,82 +1,90 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use Laravel\Passport\RefreshToken;
-use Laravel\Passport\Token;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user.
-     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
+            'email' => 'required|string|max:255|unique:users',
+            'password' => 'required|string|min:8'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json($validator->errors());
         }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'password' => Hash::make($request->password)
         ]);
 
-        // Passport menggunakan metode token berbasis OAuth2
-        $token = $user->createToken('Personal Access Token')->accessToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user,
-            'token' => $token
-        ], 201);
+            'data' => $user,
+            'access_token' => $token,
+            'token_type' => 'Bearer'
+        ]);
     }
 
-    /**
-     * Login user and return token.
-     */
     public function login(Request $request)
-    {
-        // Validate the request...
-        
-        // Attempt to find the user
-        $user = User::where('email', $request->email)->first();
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|string|email',
+        'password' => 'required|string|min:8',
+    ]);
 
-        // Check if user exists and password is correct
-        if ($user && Hash::check($request->password, $user->password)) {
-            // Create a new token
-            $token = $user->createToken('tvku')->accessToken;
-
-            // Return the token
-            return response()->json(['token' => $token], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
     }
 
-
-    /**
-     * Logout user (Revoke token).
-     */
-    public function logout(Request $request)
-    {
-        $user = Auth::user();
-
-        // Hapus semua token aktif milik user
-        Token::where('user_id', $user->id)->delete();
-        RefreshToken::where('access_token_id', $user->id)->delete();
-
-        return response()->json(['message' => 'Successfully logged out'], 200);
+    if (!Auth::attempt($request->only('email', 'password'))) {
+        return response()->json([
+            'message' => 'Unauthorized'
+        ], 401);
     }
+
+    $user = User::where('email', $request->email)->firstOrFail();
+
+    $token = $user->createToken($request->device_name)->plainTextToken; // Menggunakan device_name
+
+    return response()->json([
+        'message' => 'Login success',
+        'data' => $user, // Opsional: tambahkan data user
+        'access_token' => $token,
+        'token_type' => 'Bearer'
+    ]);
+}
+
+
+public function logoutUser(Request $request)
+{
+    try {
+        // Hapus token akses yang sedang digunakan
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User Logged Out Successfully'
+        ], 200);
+    } catch (\Throwable $th) {
+        return response()->json([
+            'status' => false,
+            'message' => $th->getMessage()
+        ], 500);
+    }
+}
+
+
 }

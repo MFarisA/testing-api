@@ -60,14 +60,6 @@ return [
             'report' => false,
         ],
 
-        'tvku_storage' => [
-            'driver' => 'local',
-            'root' => env('TVKU_STORAGE', storage_path('app/public')),
-            'url' => config('app.tvku_storage.base_url') . '/' . trim(config('app.tvku_storage.thumbnail_berita_path'), '/'),
-            'visibility' => 'public',
-            'throw' => false,
-            'report' => false,
-        ],
     ],
 
     /*

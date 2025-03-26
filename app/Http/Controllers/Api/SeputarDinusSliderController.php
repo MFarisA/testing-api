@@ -6,15 +6,44 @@ use App\Http\Controllers\Controller;
 use App\Models\SeputarDinusSlider as ModelsSeputarDinusSlider;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\Paginator;
 
 class SeputarDinusSliderController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource with pagination and search.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(ModelsSeputarDinusSlider::all(),Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20); 
+        $currentPage = $request->input('current_page', 1); 
+        $search = $request->input('search', null);
+
+        // Resolve current page for pagination
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        // Query with optional search
+        $query = ModelsSeputarDinusSlider::query();
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('teks', 'like', '%' . $search . '%')->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Paginate the results
+        $sliders = $query->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $sliders->currentPage(),
+            'per_page' => $sliders->perPage(),
+            'total' => $sliders->total(),
+            'last_page' => $sliders->lastPage(),
+            'next_page_url' => $sliders->nextPageUrl(),
+            'prev_page_url' => $sliders->previousPageUrl(),
+            'data' => $sliders->items(),
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -62,11 +91,12 @@ class SeputarDinusSliderController extends Controller
         ]);
 
         $seputarDinusSlider = ModelsSeputarDinusSlider::find($id);
-        if ($seputarDinusSlider) {
-            $seputarDinusSlider->update($request->all());
-            return response()->json($seputarDinusSlider, Response::HTTP_OK);
+        if (!$seputarDinusSlider) {
+            return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
         }
-        return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
+
+        $seputarDinusSlider->update($request->all());
+        return response()->json($seputarDinusSlider, Response::HTTP_OK);
     }
 
     /**
@@ -75,10 +105,11 @@ class SeputarDinusSliderController extends Controller
     public function destroy(string $id)
     {
         $seputarDinusSlider = ModelsSeputarDinusSlider::find($id);
-        if ($seputarDinusSlider) {
-            $seputarDinusSlider->delete();
-            return response()->json(['message' => 'Data deleted'], Response::HTTP_OK);
+        if (!$seputarDinusSlider) {
+            return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
         }
-        return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
+
+        $seputarDinusSlider->delete();
+        return response()->json(['message' => 'Data deleted successfully'], Response::HTTP_OK);
     }
 }

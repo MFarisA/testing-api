@@ -7,6 +7,7 @@ use App\Models\Berita;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
 {
@@ -59,7 +60,7 @@ class BeritaController extends Controller
             'id_kategori' => 'required|exists:tb_kategori,id_kategori',
             'publish' => 'nullable|boolean',
             'open' => 'nullable|boolean',
-            'cover' => 'nullable|string|max:1000',
+            'cover' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
             'keyword' => 'nullable|string|max:500',
             'editor' => 'nullable|integer|min:0|max:1',
             'library' => 'nullable|integer|min:0|max:1',
@@ -69,20 +70,19 @@ class BeritaController extends Controller
             'type' => 'nullable|in:video,cetak,old',
         ]);
 
-        $berita = Berita::create($request->all());
-        return response()->json($berita, Response::HTTP_CREATED);
-    }
+        $data = $request->except(['cover']);
 
-    /**
-     * Display the specified resource with kategori.
-     */
-    public function show($id)
-    {
-        $berita = Berita::with('kategori')->find($id);
-        if (!$berita) {
-            return response()->json(['message' => 'Berita not found'], Response::HTTP_NOT_FOUND);
+        if ($request->hasFile('cover')) {
+            $file = $request->file('cover');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $data['cover'] = $filename; 
         }
-        return response()->json($berita, Response::HTTP_OK);
+
+        $berita = Berita::create($data);
+        return response()->json($berita, Response::HTTP_CREATED);
     }
 
     /**
@@ -97,7 +97,7 @@ class BeritaController extends Controller
 
         $request->validate([
             'judul' => 'sometimes|required|string|max:255',
-            'path_media' => 'nullable|string|max:1000',
+            'path_media' => 'nullable|string|max:1000', 
             'link' => 'nullable|url|max:1000',
             'filename' => 'nullable|string|max:255',
             'deskripsi' => 'sometimes|required|string',
@@ -106,7 +106,7 @@ class BeritaController extends Controller
             'id_kategori' => 'sometimes|required|exists:tb_kategori,id_kategori',
             'publish' => 'nullable|boolean',
             'open' => 'nullable|boolean',
-            'cover' => 'nullable|string|max:1000',
+            'cover' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', 
             'keyword' => 'nullable|string|max:500',
             'editor' => 'nullable|integer|min:0|max:1',
             'library' => 'nullable|integer|min:0|max:1',
@@ -116,7 +116,22 @@ class BeritaController extends Controller
             'type' => 'nullable|in:video,cetak,old',
         ]);
 
-        $berita->update($request->all());
+        $data = $request->except(['cover']);
+
+        if ($request->hasFile('cover')) {
+            $file = $request->file('cover');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+
+            if ($berita->cover) {
+                Storage::disk('tvku_storage')->delete(config('app.tvku_storage.thumbnail_berita_path') . '/' . $berita->cover);
+            }
+
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $data['cover'] = $filename;
+        }
+
+        $berita->update($data);
         return response()->json($berita, Response::HTTP_OK);
     }
 
