@@ -6,12 +6,51 @@ use App\Http\Controllers\Controller;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\Paginator;
 
 class KategoriController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Kategori::all(), Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20); 
+        $currentPage = $request->input('current_page', 1); 
+        $search = $request->input('search', null); 
+        $sort = $request->input('sort', 'id_desc');
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = Kategori::query();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', '%' . $search . '%')
+                ->orWhere('slug', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('nama', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id_kategori', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id_kategori', 'desc');
+        } else {
+            $query->orderBy('id_kategori', 'desc');
+        }
+
+        $kategori = $query->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $kategori->currentPage(),
+            'per_page' => $kategori->perPage(),
+            'total' => $kategori->total(),
+            'last_page' => $kategori->lastPage(),
+            'next_page_url' => $kategori->nextPageUrl(),
+            'prev_page_url' => $kategori->previousPageUrl(),
+            'data' => $kategori->items(),
+        ], Response::HTTP_OK);
     }
 
     public function store(Request $request)

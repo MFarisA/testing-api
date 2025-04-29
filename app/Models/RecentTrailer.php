@@ -11,6 +11,7 @@ class RecentTrailer extends Model
 
     protected $table = 'v2_recenttrailer';
     protected $primaryKey = 'id';
+    public $timestamps = false;
 
     protected $fillable = [
         'judul',

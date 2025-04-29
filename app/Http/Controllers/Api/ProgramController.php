@@ -6,20 +6,58 @@ use App\Http\Controllers\Controller;
 use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\Paginator;
 
 class ProgramController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Program::all(), Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20);
+        $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null);
+        $sort = $request->input('sort', 'id_desc');
+        $idAcara = $request->input('id_acara', null);
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = Program::query();
+
+        if ($idAcara) {
+            $query->where('id_acara', $idAcara);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%')
+                ->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('judul', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id_program', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id_program', 'desc');
+        } else {
+            $query->orderBy('id_program', 'desc');
+        }
+
+        $program = $query->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $program->currentPage(),
+            'per_page' => $program->perPage(),
+            'total' => $program->total(),
+            'last_page' => $program->lastPage(),
+            'next_page_url' => $program->nextPageUrl(),
+            'prev_page_url' => $program->previousPageUrl(),
+            'data' => $program->items(),
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -36,9 +74,6 @@ class ProgramController extends Controller
         return response()->json($program, Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $program = Program::find($id);
@@ -48,9 +83,6 @@ class ProgramController extends Controller
         return response()->json($program, Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         $program = Program::find($id);
@@ -72,9 +104,6 @@ class ProgramController extends Controller
         return response()->json($program, Response::HTTP_OK);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $program = Program::find($id);

@@ -11,6 +11,7 @@ class Iklan extends Model
     use HasFactory;
 
     protected $table = 'tb_marketing';
+    public $timestamps = false;
     protected $primaryKey = 'id';
     
     protected $fillable = [
@@ -19,4 +20,21 @@ class Iklan extends Model
         'isi',
         'video'
     ];
+
+    /**
+     * Getter for foto attribute.
+     */
+    public function getFotoAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
+    }
+
+    /**
+     * Setter for foto attribute.
+     */
+    public function setFotoAttribute($value)
+    {
+        $this->attributes['foto'] = $value;
+    }
 }

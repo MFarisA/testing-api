@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use Laravel\Passport\RefreshToken;
+use Laravel\Passport\Token;
 
 class AuthController extends Controller
 {
@@ -15,87 +17,70 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|max:255|unique:users',
-            'password' => 'required|string|min:8'
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:6',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors());
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => bcrypt($request->password),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('Personal Access Token')->accessToken;
 
         return response()->json([
-            'data' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer'
-        ]);
+            'message' => 'User registered successfully',
+            'user' => $user,
+            'token' => $token
+        ], 201);
     }
-    // public function login(Request $request)
-    // {
-    //     if (! Auth::attempt($request->only('email', 'password'))) {
-    //         return response()->json([
-    //             'message' => 'Unauthorized'
-    //         ], 401);
-    //     }
 
-    //     $user = User::where('email', $request->email)->firstOrFail();
-
-    //     $token = $user->createToken('auth_token')->plainTextToken;
-
-    //     return response()->json([
-    //         'message' => 'Login success',
-    //         'access_token' => $token,
-    //         'token_type' => 'Bearer'
-    //     ]);
-    // }
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|string|email',
+        $request->validate([
+            'email' => 'required|email',
             'password' => 'required|string'
         ]);
 
-        if (!Auth::attempt($credentials)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized'
-            ], 401);
+        $user = User::where('email', $request->email)->first();
+
+        if ($user && Hash::check($request->password, $user->password)) {
+            $token = $user->createToken('tvku')->accessToken;
+
+            $cookie = cookie('auth_token', $token);
+
+
+            return response()->json(['token' => $token], 200)->cookie($cookie);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        // $user = Auth::user();
-        $user = User::where('email', $request->email)->firstOrFail();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Login successful',
-            'access_token' => $token,
-            'token_type' => 'Bearer'
-        ], 200);
     }
 
-    public function logoutUser(Request $request)
+    public function logout(Request $request)
     {
-        try {
-            // Hapus token akses yang sedang digunakan
-            $request->user()->currentAccessToken()->delete();
+        $user = Auth::user();
+        Token::where('user_id', $user->id)->delete();
+        RefreshToken::where('access_token_id', $user->id)->delete();
 
+        return response()->json(['message' => 'Logged out'], 200)->withoutCookie('auth_token');
+    }
+
+    public function validateToken(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user) {
             return response()->json([
-                'status' => true,
-                'message' => 'User Logged Out Successfully'
+                'message' => 'Token is valid',
+                'user' => $user,
             ], 200);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status' => false,
-                'message' => $th->getMessage()
-            ], 500);
         }
+
+        return response()->json(['message' => 'Token is invalid or expired'], 401);
     }
 }

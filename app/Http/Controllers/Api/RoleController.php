@@ -2,70 +2,88 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        $roles = Role::with('permissions')->get();
-        return response()->json($roles, Response::HTTP_OK);
+        $this->middleware('permission:view role', ['only' => ['index']]);
+        $this->middleware('permission:create role', ['only' => ['create', 'store', 'addPermissionToRole', 'givePermissionToRole']]);
+        $this->middleware('permission:update role', ['only' => ['update', 'edit']]);
+        $this->middleware('permission:delete role', ['only' => ['destroy']]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function index( Request $request)
+    {
+        $roles = Role::get();
+        return response()->json(['roles' => $roles], Response::HTTP_OK);
+    }
+
     public function storeRole(Request $request)
     {
-        $request()->validate([
+        $request->validate([
             'name' => 'required|unique:roles,name',
         ]);
-        
+
         $role = Role::create(['name' => $request->name]);
 
         return response()->json(['message' => 'Role created', 'role' => $role], Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function storePermission(Request $request)
+    public function update(Request $request, Role $role)
     {
         $request->validate([
-           'name' => 'required|unique:permissions,name',
+            'name' => [
+                'required',
+                'string',
+                'unique:roles,name,' . $role->id
+            ]
         ]);
 
-        $permission = Permission::create(['name' => $request->name]);
-
-        return response()->json(['message' => 'Permission created', 'permission' => $permission], Response::HTTP_CREATED);
+        $role->name = $request->name;
+        $role->save();
+        return response()->json(['message' => 'Role updated', 'role' => $role], Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function assignPermissionToRole(Request $request)
+    public function addPermissionToRole(string $id)
+    {
+
+        $permissions = Permission::get();
+        $role = Role::findOrFail($id);
+        $rolePermissions = DB::table('role_has_permissions')
+            ->where('role_has_permissions.role_id', $role->id)
+            ->pluck('role_has_permissions.permission_id', 'role_has_permissions.permission_id')
+            ->all();
+
+        $permissions = Permission::all();
+
+        return response()->json([
+            'message' => 'Permission added to role',
+            'role' => $role,
+            'permissions' => $permissions,
+            'rolePermissions' => $rolePermissions
+        ], Response::HTTP_OK);
+    }
+
+    public function givePermissionToRole(Request $request, string $id)
     {
         $request->validate([
-            'role' => 'required|exists:roles,name',
             'permission' => 'required|exists:permissions,name',
         ]);
 
-        $role = Role::findByName($request->role);
-        $role->givePermissionTo($request->permission);
+        $role = Role::findOrFail($id);
+        $role->syncPermissions($request->permission);
 
-        return response()->json(['message' => 'Permission assigned to role', 'role' => $role->name, 'permission' => $request->permission], Response::HTTP_OK);
+        return response()->json(['message' => 'Permission given to role', 'role' => $role], Response::HTTP_OK);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+
     public function destroyRole(string $id)
     {
         $role = Role::findById($id);

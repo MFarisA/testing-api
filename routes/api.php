@@ -16,38 +16,31 @@ use App\Http\Controllers\Api\SeputarDinusSliderController;
 use App\Http\Controllers\Api\SeputarDinusSidebarBannerController;
 use App\Http\Controllers\Api\SeputarDinusSlidesTitleController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\JadwalAcaraController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
+use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Illuminate\Http\Request;
-
-
-
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
-    Route::get('/user/profile', [UserController::class, 'profile']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::apiResource('users', UserController::class);
-});
-
-
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logoutUser']);
+use Illuminate\Support\Facades\Auth;
 
 Route::apiResource('kategori', KategoriController::class);
 Route::apiResource('berita', BeritaController::class);
+Route::patch('berita/{id}', [BeritaController::class, 'update']);
 Route::apiResource('iklan', IklanController::class);
+Route::patch('iklan/{id}', [IklanController::class, 'update']);
 Route::apiResource('acara', AcaraController::class);
+Route::patch('acara/{id}', [AcaraController::class, 'update']);
+Route::apiResource('jadwal-acara', JadwalAcaraController::class);
 Route::apiResource('program', ProgramController::class);
 Route::apiResource('our-programs', OurProgramsController::class);
+Route::patch('our-programs/{id}', [OurProgramsController::class, 'update']);
 Route::apiResource('recent-trailer', RecentTrailerController::class);
+Route::patch('recent-trailer/{id}', [RecentTrailerController::class, 'update']);
 Route::apiResource('seputar-dinus-slider', SeputarDinusSliderController::class);
 Route::apiResource('seputar-dinus-sidebar-banner', SeputarDinusSidebarBannerController::class);
 Route::apiResource('seputar-dinus-slides-title', SeputarDinusSlidesTitleController::class);
+Route::apiResource('users', UserController::class);
 
 Route::prefix('home')->group(function () {
     Route::apiResource('our-expertise1', HomeOurExpertise1Controller::class);
@@ -56,10 +49,32 @@ Route::prefix('home')->group(function () {
     Route::apiResource('who-we-are', HomeWhoWeAreController::class);
 });
 
+Route::post('/oauth/token', [AccessTokenController::class, 'issueToken'])
+    ->middleware(['throttle'])
+    ->name('passport.token');
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/validate-token', [AuthController::class, 'validateToken']);
+});
+
 Route::prefix('roles')->controller(RoleController::class)->group(function () {
     Route::post('/create', 'storeRole');
-    Route::post('/permission/create', 'storePermission');
-    Route::post('/permission/assign', 'assignPermissionToRole');
-    Route::delete('/roles/delete/{id}', [RoleController::class, 'destroyRole']);
+    Route::post('/permission/assign', 'givePermissionToRole');
+    Route::delete('/delete/{id}', 'destroyRole');
     Route::get('/', 'index');
+});
+
+Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
+    Route::post('/create', 'storePermission');
+    Route::get('/', 'index');
+    Route::put('/{permission}', 'update');
+    Route::delete('/{permission}', 'destroy');
+});
+
+Route::middleware(['cookie.token', 'auth:api'])->get('/cookie', function () {
+    return response()->json(Auth::user());
 });

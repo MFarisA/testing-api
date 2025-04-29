@@ -11,7 +11,7 @@ class SeputarDinusSlidesTitle extends Model
 
     protected $table = 'v2_sptdinus_slides_title';
     protected $primaryKey = 'id';
-
+    public $timestamps = false;
     protected $fillable = [
         'judul',
         'urutan',

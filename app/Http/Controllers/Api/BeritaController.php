@@ -11,24 +11,41 @@ use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
 {
-    /**
-     * Display a listing of the resource with pagination and search.
-     */
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 20);
         $currentPage = $request->input('current_page', 1);
         $search = $request->input('search', null);
+        $sort = $request->input('sort', 'id_desc');
+        $idKategori = $request->input('id_kategori', null);
 
         Paginator::currentPageResolver(function () use ($currentPage) {
             return $currentPage;
         });
 
         $query = Berita::with('kategori');
+
+        if ($idKategori) {
+            $query->where('id_kategori', $idKategori);
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('judul', 'like', '%' . $search . '%')->orWhere('deskripsi', 'like', '%' . $search . '%');
+                $q->where('judul', 'like', '%' . $search . '%')
+                ->orWhere('deskripsi', 'like', '%' . $search . '%');
             });
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('waktu', $sort);
+        } elseif ($sort === 'latest') {
+            $query->orderBy('waktu_publish', 'desc');
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
         }
 
         $berita = $query->paginate($perPage);
@@ -44,9 +61,6 @@ class BeritaController extends Controller
         ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -60,13 +74,13 @@ class BeritaController extends Controller
             'id_kategori' => 'required|exists:tb_kategori,id_kategori',
             'publish' => 'nullable|boolean',
             'open' => 'nullable|boolean',
-            'cover' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+            'cover' => 'file|mimes:jpg,jpeg,png|max:2048',
             'keyword' => 'nullable|string|max:500',
-            'editor' => 'nullable|integer|min:0|max:1',
-            'library' => 'nullable|integer|min:0|max:1',
-            'redaktur' => 'nullable|integer|min:0|max:1',
+            'editor' => 'nullable|boolean',
+            'library' => 'nullable|boolean',
+            'redaktur' => 'nullable|boolean',
             'waktu_publish' => 'nullable|date_format:Y-m-d H:i:s',
-            'program_id' => 'nullable|exists:tb_program,id_program',
+            'program_id' => 'nullable|exists:tb_program_acara,id_program',
             'type' => 'nullable|in:video,cetak,old',
         ]);
 
@@ -74,7 +88,7 @@ class BeritaController extends Controller
 
         if ($request->hasFile('cover')) {
             $file = $request->file('cover');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName(); 
             $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
 
             Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
@@ -85,9 +99,21 @@ class BeritaController extends Controller
         return response()->json($berita, Response::HTTP_CREATED);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    public function show($id)
+    {
+        $berita = Berita::with('kategori')->find($id);
+
+        if (!$berita) {
+            return response()->json(['message' => 'Berita not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($berita->cover) {
+            $berita->cover_url = asset(config('app.tvku_storage.thumbnail_berita_path') . '/' . $berita->cover);
+        }
+
+        return response()->json($berita, Response::HTTP_OK);
+    }
+
     public function update(Request $request, $id)
     {
         $berita = Berita::find($id);
@@ -95,54 +121,73 @@ class BeritaController extends Controller
             return response()->json(['message' => 'Berita not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $request->validate([
-            'judul' => 'sometimes|required|string|max:255',
-            'path_media' => 'nullable|string|max:1000', 
+        $validated = $request->validate([
+            'judul' => 'nullable|string|max:255',
+            'path_media' => 'nullable|string|max:1000',
             'link' => 'nullable|url|max:1000',
             'filename' => 'nullable|string|max:255',
-            'deskripsi' => 'sometimes|required|string',
-            'waktu' => 'sometimes|required|date_format:Y-m-d H:i:s',
-            'id_uploader' => 'sometimes|required|exists:users,id',
-            'id_kategori' => 'sometimes|required|exists:tb_kategori,id_kategori',
+            'deskripsi' => 'nullable|string|max:1000',
+            'waktu' => 'nullable|date_format:Y-m-d H:i:s',
+            'id_uploader' => 'nullable|exists:users,id',
+            'id_kategori' => 'nullable|exists:tb_kategori,id_kategori',
             'publish' => 'nullable|boolean',
             'open' => 'nullable|boolean',
-            'cover' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', 
+            'cover' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'keyword' => 'nullable|string|max:500',
-            'editor' => 'nullable|integer|min:0|max:1',
-            'library' => 'nullable|integer|min:0|max:1',
-            'redaktur' => 'nullable|integer|min:0|max:1',
+            'editor' => 'nullable|boolean',
+            'library' => 'nullable|boolean',
+            'redaktur' => 'nullable|boolean',
             'waktu_publish' => 'nullable|date_format:Y-m-d H:i:s',
-            'program_id' => 'nullable|exists:tb_program,id_program',
+            'program_id' => 'nullable|exists:tb_program_acara,id_program',
             'type' => 'nullable|in:video,cetak,old',
         ]);
 
-        $data = $request->except(['cover']);
-
         if ($request->hasFile('cover')) {
             $file = $request->file('cover');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
-
-            if ($berita->cover) {
-                Storage::disk('tvku_storage')->delete(config('app.tvku_storage.thumbnail_berita_path') . '/' . $berita->cover);
-            }
-
-            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
-            $data['cover'] = $filename;
+            $berita->cover = Berita::storeCover($file, $berita->cover);
         }
 
-        $berita->update($data);
-        return response()->json($berita, Response::HTTP_OK);
+        $fields = [
+            'judul', 'path_media', 'link', 'filename', 'deskripsi',
+            'waktu', 'id_uploader', 'id_kategori', 'publish',
+            'open', 'keyword', 'editor', 'library', 'redaktur',
+            'waktu_publish', 'type'
+        ];
+
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $validated)) {
+                $berita->{$field} = $validated[$field];
+            }
+        }
+
+        if (array_key_exists('program_id', $validated)) {
+            $berita->program_id = $validated['program_id'];
+        }
+
+        try {
+            $berita->save();
+
+            return response()->json([
+                'message' => 'Updated successfully!',
+                'data' => $berita,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update data',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         $berita = Berita::find($id);
         if (!$berita) {
             return response()->json(['message' => 'Berita not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($berita->cover) {
+            Storage::disk('tvku_storage')->delete(config('app.tvku_storage.thumbnail_berita_path') . '/' . $berita->cover);
         }
 
         $berita->delete();

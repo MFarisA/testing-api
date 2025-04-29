@@ -2,117 +2,113 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Pagination\Paginator;
 
 class UserController extends Controller
 {
-    // public function __construct()
-    // {
-    //     // Pastikan semua method memerlukan autentikasi
-    //     $this->middleware('auth:sanctum');
-    // }
-
-    /**
-     * Get authenticated user.
-     */
-    public function profile(Request $request)
+    public function index(Request $request)
     {
-        return response()->json([
-            'status' => true,
-            'message' => 'User profile retrieved successfully',
-            'data' => $request->user()
-        ], 200);
-    }
+        $perPage = $request->input('per_page', 20); 
+        $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null); 
+        $sort = $request->input('sort', 'id_desc'); 
 
-    /**
-     * Get all users (Admin only).
-     */
-    public function index()
-    {
-        if (!Gate::allows('isAdmin')) {
-            return response()->json(['message' => 'Access denied'], 403);
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = User::query();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%');
+            });
         }
 
-        $users = User::all();
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('name', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $users = $query->paginate($perPage);
+
         return response()->json([
-            'status' => true,
-            'message' => 'Users retrieved successfully',
-            'data' => $users
-        ], 200);
+            'current_page' => $users->currentPage(),
+            'per_page' => $users->perPage(),
+            'total' => $users->total(),
+            'last_page' => $users->lastPage(),
+            'next_page_url' => $users->nextPageUrl(),
+            'prev_page_url' => $users->previousPageUrl(),
+            'data' => $users->items(),
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a new user.
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8'
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => Hash::make($request->input('password')),
         ]);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'User created successfully',
-            'data' => $user
-        ], 201);
+        return response()->json($user, Response::HTTP_CREATED);
     }
 
-    /**
-     * Show a single user.
-     */
     public function show($id)
     {
         $user = User::findOrFail($id);
-        return response()->json([
-            'status' => true,
-            'message' => 'User retrieved successfully',
-            'data' => $user
-        ], 200);
+        return response()->json($user, Response::HTTP_OK);
     }
 
-    /**
-     * Update user.
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,'.$id,
-            'password' => 'sometimes|string|min:8'
+        $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $id,
+            'password' => 'sometimes|required|string|min:8|confirmed',
         ]);
-
-        $user = User::findOrFail($id);
-        $user->update(array_filter($validated));
-
-        return response()->json([
-            'status' => true,
-            'message' => 'User updated successfully',
-            'data' => $user
-        ], 200);
+    
+        $user = User::find($id);
+        
+        if ($user) {
+            $data = $request->only(['name', 'email']);
+            if ($request->has('password')) {
+                $data['password'] = Hash::make($request->input('password'));
+            }
+    
+            $user->update($data);
+    
+            return response()->json([
+                'message' => 'User updated successfully',
+                'user' => $user,
+            ], Response::HTTP_OK);
+        }
+    
+        return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
     }
 
-    /**
-     * Delete user.
-     */
     public function destroy($id)
     {
         $user = User::findOrFail($id);
         $user->delete();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'User deleted successfully'
-        ], 200);
+        return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 }

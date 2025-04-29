@@ -12,6 +12,7 @@ class HomeWhoWeAre extends Model
 
     protected $table = 'v2_home_whoweare';
     protected $primaryKey = 'id';
+    public $timestamps = false;
 
     protected $fillable = [
         'judul',
@@ -24,4 +25,15 @@ class HomeWhoWeAre extends Model
         'motto2sub',
         'motto3sub',
     ];
+
+    public function getGambarAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
+    }
+
+    public function setGambarAttribute($value)
+    {
+        $this->attributes['gambar'] = $value;
+    }
 }

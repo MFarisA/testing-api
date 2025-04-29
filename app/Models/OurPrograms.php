@@ -11,6 +11,7 @@ class OurPrograms extends Model
 
     protected $table = 'v2_our_programs';
     protected $primaryKey = 'id';
+    public $timestamps = false;
 
     protected $fillable = [
         'thumbnail',
@@ -22,37 +23,12 @@ class OurPrograms extends Model
 
     public function getThumbnailAttribute($value)
     {
-        return $this->generateStorageUrl($value);
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
     }
 
     public function setThumbnailAttribute($value)
     {
-        $this->attributes['thumbnail'] = $this->cleanStorageUrl($value);
-    }
-
-    private function generateStorageUrl($path)
-    {
-        if (!$path) {
-            return null;
-        }
-
-        $baseUrl = 'https://storage.tvku.tv/ourprograms';
-
-        if (filter_var($path, FILTER_VALIDATE_URL)) {
-            return $path;
-        }
-
-        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
-    }
-
-    private function cleanStorageUrl($path)
-    {
-        $baseUrl = 'https://storage.tvku.tv/ourprograms/';
-
-        if (strpos($path, $baseUrl) === 0) {
-            return substr($path, strlen($baseUrl));
-        }
-
-        return $path;
+        $this->attributes['thumbnail'] = $value;
     }
 }

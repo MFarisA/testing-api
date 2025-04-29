@@ -11,6 +11,7 @@ class Berita extends Model
     use HasFactory;
 
     protected $table = 'tb_berita';
+    public $timestamps = false;
 
     protected $fillable = [
         'judul',
@@ -43,11 +44,11 @@ class Berita extends Model
         'redaktur' => 'boolean',
     ];
 
-    protected $with = ['kategori']; 
+    protected $with = ['kategori'];
 
     public function uploader()
     {
-        return $this->belongsTo(User::class, 'id_uploader');
+        return $this->belongsTo(User::class, 'id_uploader', 'id');
     }
 
     public function kategori()
@@ -67,12 +68,18 @@ class Berita extends Model
     
         return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . $value : null;
     }
-    
-    public function getPathMediaAttribute($value)
+
+    public static function storeCover($file, $oldFile = null)
     {
-        $baseUrl = config('app.tvku_storage.base_url');
-        $thumbnailPath = config('app.tvku_storage.thumbnail_berita_path');
-    
-        return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . $value : null;
+        $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName(); 
+        $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+
+        if ($oldFile) {
+            Storage::disk('tvku_storage')->delete(config('app.tvku_storage.thumbnail_berita_path') . '/' . $oldFile);
+        }
+
+        Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+
+        return $filename;
     }
 }

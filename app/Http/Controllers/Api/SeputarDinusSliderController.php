@@ -7,32 +7,45 @@ use App\Models\SeputarDinusSlider as ModelsSeputarDinusSlider;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Storage;
 
 class SeputarDinusSliderController extends Controller
 {
-    /**
-     * Display a listing of the resource with pagination and search.
-     */
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 20); 
+        $perPage = $request->input('per_page', 20);
         $currentPage = $request->input('current_page', 1); 
-        $search = $request->input('search', null);
+        $search = $request->input('search', null); 
+        $sort = $request->input('sort', 'id_desc'); 
+        $idSlidesTitle = $request->input('id_slides_title', null);
 
-        // Resolve current page for pagination
         Paginator::currentPageResolver(function () use ($currentPage) {
             return $currentPage;
         });
 
-        // Query with optional search
         $query = ModelsSeputarDinusSlider::query();
+
+        if ($idSlidesTitle) {
+            $query->where('id_slides_title', $idSlidesTitle);
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('teks', 'like', '%' . $search . '%')->orWhere('deskripsi', 'like', '%' . $search . '%');
+                $q->where('teks', 'like', '%' . $search . '%')
+                ->orWhere('deskripsi', 'like', '%' . $search . '%');
             });
         }
 
-        // Paginate the results
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('teks', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
         $sliders = $query->paginate($perPage);
 
         return response()->json([
@@ -46,27 +59,63 @@ class SeputarDinusSliderController extends Controller
         ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'id_slides_title' => 'required|integer',
-            'thumbnail' => 'nullable|string|max:255',
-            'thumbnail_hover' => 'nullable|string|max:255',
-            'teks' => 'nullable|string|max:255',
-            'link' => 'nullable|string',
-            'deskripsi' => 'required|string',
-        ]);
-
-        $seputarDinusSlider = ModelsSeputarDinusSlider::create($request->all());
-        return response()->json($seputarDinusSlider, Response::HTTP_CREATED);
+        try {
+            $request->validate([
+                'id_slides_title' => 'required|integer',
+                'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'thumbnail_hover' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'teks' => 'nullable|string|max:255',
+                'link' => 'nullable|string',
+                'deskripsi' => 'required|string',
+            ]);
+    
+            $data = $request->except(['thumbnail', 'thumbnail_hover']);
+    
+            if ($request->hasFile('thumbnail')) {
+                $file = $request->file('thumbnail');
+                $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+                $folderPath = 'seputar_dinus/thumbnails';
+                $filePath = $folderPath . '/' . $filename;
+    
+                if (!Storage::disk('public')->exists($folderPath)) {
+                    Storage::disk('public')->makeDirectory($folderPath);
+                }
+    
+                Storage::disk('public')->put($filePath, file_get_contents($file));
+                $data['thumbnail'] = $filePath;
+            }
+    
+            if ($request->hasFile('thumbnail_hover')) {
+                $file = $request->file('thumbnail_hover');
+                $filename = now()->format('d-m-Y') . '_hover_' . $file->getClientOriginalName();
+                $folderPath = 'seputar_dinus/thumbnails';
+                $filePath = $folderPath . '/' . $filename;
+    
+                if (!Storage::disk('public')->exists($folderPath)) {
+                    Storage::disk('public')->makeDirectory($folderPath);
+                }
+    
+                Storage::disk('public')->put($filePath, file_get_contents($file));
+    
+                $data['thumbnail_hover'] = $filePath;
+            }
+    
+            $seputarDinusSlider = ModelsSeputarDinusSlider::create($data);
+    
+            return response()->json([
+                'message' => 'Seputar Dinus Slider successfully created',
+                'data' => $seputarDinusSlider,
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $seputarDinusSlider = ModelsSeputarDinusSlider::find($id);
@@ -76,32 +125,93 @@ class SeputarDinusSliderController extends Controller
         return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        $request->validate([
-            'id_slides_title' => 'required|integer',
-            'thumbnail' => 'nullable|string|max:255',
-            'thumbnail_hover' => 'nullable|string|max:255',
-            'teks' => 'nullable|string|max:255',
-            'link' => 'nullable|string',
-            'deskripsi' => 'required|string',
-        ]);
-
         $seputarDinusSlider = ModelsSeputarDinusSlider::find($id);
         if (!$seputarDinusSlider) {
             return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $seputarDinusSlider->update($request->all());
-        return response()->json($seputarDinusSlider, Response::HTTP_OK);
+        $validated = $request->validate([
+            'id_slides_title' => 'required|integer',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'thumbnail_hover' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'teks' => 'nullable|string|max:255',
+            'link' => 'nullable|string',
+            'deskripsi' => 'required|string',
+        ]);
+
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+            $folderPath = 'seputar_dinus/thumbnails';
+            $filePath = $folderPath . '/' . $filename;
+
+            if (!Storage::disk('public')->exists($folderPath)) {
+                Storage::disk('public')->makeDirectory($folderPath);
+            }
+
+            if ($seputarDinusSlider->thumbnail) {
+                $oldPath = $seputarDinusSlider->thumbnail;
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            Storage::disk('public')->put($filePath, file_get_contents($file));
+            $seputarDinusSlider->thumbnail = $filePath;
+        }
+
+        if ($request->hasFile('thumbnail_hover')) {
+            $file = $request->file('thumbnail_hover');
+            $filename = now()->format('d-m-Y') . '_hover_' . $file->getClientOriginalName();
+            $folderPath = 'seputar_dinus/thumbnails';
+            $filePath = $folderPath . '/' . $filename;
+
+            if (!Storage::disk('public')->exists($folderPath)) {
+                Storage::disk('public')->makeDirectory($folderPath);
+            }
+
+            if ($seputarDinusSlider->thumbnail_hover) {
+                $oldPath = $seputarDinusSlider->thumbnail_hover;
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            Storage::disk('public')->put($filePath, file_get_contents($file));
+            $seputarDinusSlider->thumbnail_hover = $filePath;
+        }
+
+        $fields = ['id_slides_title', 'teks', 'link', 'deskripsi'];
+
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $validated)) {
+                $seputarDinusSlider->{$field} = $validated[$field];
+            }
+        }
+
+        try {
+            $seputarDinusSlider->save();
+
+            $seputarDinusSlider->thumbnail_url = asset('storage/' . $seputarDinusSlider->thumbnail);
+            $seputarDinusSlider->thumbnail_hover_url = asset('storage/' . $seputarDinusSlider->thumbnail_hover);
+
+            return response()->json([
+                'message' => 'Updated successfully!',
+                'data' => $seputarDinusSlider,
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            if (isset($filePath) && Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
+            }
+            return response()->json([
+                'message' => 'Failed to update data',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $seputarDinusSlider = ModelsSeputarDinusSlider::find($id);

@@ -6,20 +6,50 @@ use App\Http\Controllers\Controller;
 use App\Models\SeputarDinusSlidesTitle;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\Paginator;
 
 class SeputarDinusSlidesTitleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(SeputarDinusSlidesTitle::all(), Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20);
+        $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null);
+        $sort = $request->input('sort', 'id_desc');
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = SeputarDinusSlidesTitle::query();
+
+        if ($search) {
+            $query->where('judul', 'like', '%' . $search . '%');
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('judul', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $slidesTitles = $query->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $slidesTitles->currentPage(),
+            'per_page' => $slidesTitles->perPage(),
+            'total' => $slidesTitles->total(),
+            'last_page' => $slidesTitles->lastPage(),
+            'next_page_url' => $slidesTitles->nextPageUrl(),
+            'prev_page_url' => $slidesTitles->previousPageUrl(),
+            'data' => $slidesTitles->items(),
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -31,9 +61,6 @@ class SeputarDinusSlidesTitleController extends Controller
         return response()->json($seputarDinusSlidesTitle, Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $seputarDinusSlidesTitle = SeputarDinusSlidesTitle::find($id);
@@ -43,9 +70,6 @@ class SeputarDinusSlidesTitleController extends Controller
         return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         $request->validate([
@@ -61,9 +85,6 @@ class SeputarDinusSlidesTitleController extends Controller
         return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $seputarDinusSlidesTitle = SeputarDinusSlidesTitle::find($id);

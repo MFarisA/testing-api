@@ -6,34 +6,94 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\HomeOurExpertise2;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Pagination\Paginator;
 
 class HomeOurExpertise2Controller extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(HomeOurExpertise2::all(), Response::HTTP_OK);
+        $perPage = $request->input('per_page', 20);
+        $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null);
+        $sort = $request->input('sort', 'id_desc');
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = HomeOurExpertise2::query();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('judul', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $expertise = $query->paginate($perPage);
+
+        return response()->json([
+            'current_page' => $expertise->currentPage(),
+            'per_page' => $expertise->perPage(),
+            'total' => $expertise->total(),
+            'last_page' => $expertise->lastPage(),
+            'next_page_url' => $expertise->nextPageUrl(),
+            'prev_page_url' => $expertise->previousPageUrl(),
+            'data' => $expertise->items(),
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'thumbnail' => 'nullable|string|max:255',
-            'judul' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'thumbnail' => 'required|file|mimes:jpg,jpeg,png|max:2048',
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'nullable|string|max:1000',
+            ]);
 
-        $expertise = HomeOurExpertise2::create($request->all());
-        return response()->json($expertise, Response::HTTP_CREATED);
+            $data = $request->except('thumbnail');
+
+            if ($request->hasFile('thumbnail')) {
+                $file = $request->file('thumbnail');
+                $filename = now()->format('d-m-Y') . '_' . Str::slug($request->judul) . '.' . $file->getClientOriginalExtension();
+                $folderPath = 'ourexpertise/thumbnails';
+
+                if (!Storage::disk('tvku_storage')->exists($folderPath)) {
+                    Storage::disk('tvku_storage')->makeDirectory($folderPath);
+                }
+
+                $filePath = $folderPath . '/' . $filename;
+                Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+
+                $data['thumbnail'] = $filePath;
+            }
+
+            $expertise = HomeOurExpertise2::create($data);
+
+            return response()->json([
+                'message' => 'Expertise successfully created',
+                'data' => $expertise,
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $expertise = HomeOurExpertise2::find($id);
@@ -43,28 +103,67 @@ class HomeOurExpertise2Controller extends Controller
         return response()->json($expertise, Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
         $expertise = HomeOurExpertise2::find($id);
         if (!$expertise) {
             return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $request->validate([
-            'thumbnail' => 'nullable|string|max:255',
+        $validated = $request->validate([
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'judul' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string|max:1000',
         ]);
 
-        $expertise->update($request->all());
-        return response()->json($expertise, Response::HTTP_OK);
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+            $folderPath = 'ourexpertise/thumbnails';
+            $filePath = $folderPath . '/' . $filename;
+
+            if (!Storage::disk('tvku_storage')->exists($folderPath)) {
+                Storage::disk('tvku_storage')->makeDirectory($folderPath);
+            }
+
+            if ($expertise->thumbnail) {
+                $oldPath = str_replace(config('app.tvku_storage.base_url') . '/', '', $expertise->thumbnail);
+                if (Storage::disk('tvku_storage')->exists($oldPath)) {
+                    Storage::disk('tvku_storage')->delete($oldPath);
+                }
+            }
+
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $expertise->thumbnail = $filePath;
+        }
+
+        $fields = ['judul', 'deskripsi'];
+
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $validated)) {
+                $expertise->{$field} = $validated[$field];
+            }
+        }
+
+        try {
+            $expertise->save();
+            $expertise->thumbnail = config('app.tvku_storage.base_url') . '/' . $expertise->thumbnail;
+
+            return response()->json([
+                'message' => 'Updated successfully!',
+                'data' => $expertise,
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            if (isset($filePath) && Storage::disk('tvku_storage')->exists($filePath)) {
+                Storage::disk('tvku_storage')->delete($filePath);
+            }
+            return response()->json([
+                'message' => 'Failed to update data',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $expertise = HomeOurExpertise2::find($id);

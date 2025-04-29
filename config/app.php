@@ -2,6 +2,7 @@
 
 return [
 
+
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -53,6 +54,10 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'tvku_storage' => [
+        'base_url' => env('TVKU_STORAGE_URL', env('APP_URL') . '/storage'),
+        'thumbnail_berita_path' => env('TVKU_STORAGE_THUMBNAIL_BERITA_PATH', 'cover/kjt'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

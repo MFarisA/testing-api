@@ -11,6 +11,7 @@ class SeputarDinusSlider extends Model
 
     protected $table = 'v2_sptdinus_slider';
     protected $primaryKey = 'id';
+    public $timestamps = false;
 
     protected $fillable = [
         'id_slides_title',
@@ -21,58 +22,25 @@ class SeputarDinusSlider extends Model
         'deskripsi',
     ];
 
-    protected static function boot()
+    public function getThumbnailAttribute($value)
     {
-        parent::boot();
-
-        static::saving(function ($model) {
-            $model->thumbnail = $model->cleanStorageUrl($model->thumbnail);
-            $model->thumbnail_hover = $model->cleanStorageUrl($model->thumbnail_hover);
-        });
-    }
-
-    public function getThumbnailUrlAttribute()
-    {
-        return $this->generateStorageUrl($this->thumbnail);
-    }
-
-    public function getThumbnailHoverUrlAttribute()
-    {
-        return $this->generateStorageUrl($this->thumbnail_hover);
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
     }
 
     public function setThumbnailAttribute($value)
     {
-        $this->attributes['thumbnail'] = $this->cleanStorageUrl($value);
+        $this->attributes['thumbnail'] = $value;
+    }
+
+    public function getThumbnailHoverAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
     }
 
     public function setThumbnailHoverAttribute($value)
     {
-        $this->attributes['thumbnail_hover'] = $this->cleanStorageUrl($value);
-    }
-
-    private function generateStorageUrl(?string $path): ?string
-    {
-        if (empty($path)) {
-            return null;
-        }
-
-        if (filter_var($path, FILTER_VALIDATE_URL)) {
-            return $path;
-        }
-
-        $baseUrl = 'https://storage.tvku.tv/sptdnslider';
-        return "{$baseUrl}/" . ltrim($path, '/');
-    }
-
-    private function cleanStorageUrl(?string $path): ?string
-    {
-        if (empty($path)) {
-            return null;
-        }
-
-        $baseUrl = 'https://storage.tvku.tv/sptdnslider/';
-
-        return str_starts_with($path, $baseUrl) ? substr($path, strlen($baseUrl)) : $path;
+        $this->attributes['thumbnail_hover'] = $value;
     }
 }

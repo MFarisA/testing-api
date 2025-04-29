@@ -3,13 +3,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Acara extends Model
 {
     use HasFactory;
 
     protected $table = 'tb_acara';
+    public $timestamps = false;
     protected $primaryKey = 'id_acara';
 
     protected $fillable = [
@@ -24,7 +24,8 @@ class Acara extends Model
      */
     public function getThumbnailAcaraAttribute($value)
     {
-        return $value ? asset(config('app.tvku_storage.thumbnail_berita_path') . '/' . $value) : null;
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        return $value ? $baseUrl . '/' . $value : null;
     }
 
     /**
@@ -32,10 +33,6 @@ class Acara extends Model
      */
     public function setThumbnailAcaraAttribute($value)
     {
-        $this->attributes['thumbnail_acara'] = $value ? str_replace(
-            asset(config('app.tvku_storage.thumbnail_berita_path') . '/'),
-            '',
-            $value
-        ) : null;
+        $this->attributes['thumbnail_acara'] = $value;
     }
 }
