@@ -16,4 +16,9 @@ class SeputarDinusSlidesTitle extends Model
         'judul',
         'urutan',
     ];
+
+    public function translations()
+    {
+        return $this->hasMany(SeputarDinusSlidesTitleTranslation::class, 'spt_dinus_title_id');
+    }
 }

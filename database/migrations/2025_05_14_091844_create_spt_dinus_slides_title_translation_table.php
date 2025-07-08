@@ -13,18 +13,13 @@ return new class extends Migration
     {
         Schema::create('spt_dinus_slides_title_translation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('spt_dinus_slides_title_id')
-                ->constrained('v2_sptdinus_slides_title')
-                ->onDelete('cascade')
-                ->name('fk_dinus_title');
-            $table->foreignId('translation_id')
-                ->constrained('translations')
-                ->onDelete('cascade')
-                ->name('fk_translation');
             $table->string('judul');
-            $table->timestamps();
+            $table->integer('urutan')->nullable();
+            $table->integer('spt_dinus_title_id'); 
+
+            $table->foreign('spt_dinus_title_id')->references('id')->on('v2_sptdinus_slides_title')->onDelete('cascade');
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
         });
-        
     }
 
     /**

@@ -13,20 +13,12 @@ return new class extends Migration
     {
         Schema::create('spt_dinus_sidebar_banner_translation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('spt_dinus_sidebar_banner_id')
-                ->constrained('v2_sptudinus_sidebar_banner')
-                ->onDelete('cascade')
-                ->name('fk_sidebar_banner');
-                
-            $table->foreignId('translation_id')
-                ->constrained('translations')
-                ->onDelete('cascade')
-                ->name('fk_sidebar_translation');
-        
             $table->string('gambar')->nullable();
-            $table->timestamps();
+            $table->integer('spt_dinus_banner_id'); 
+
+            $table->foreign('spt_dinus_banner_id')->references('id')->on('v2_sptudinus_sidebar_banner')->onDelete('cascade');
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
         });
-        
     }
 
     /**

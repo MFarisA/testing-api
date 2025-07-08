@@ -31,4 +31,9 @@ class HomeSlider extends Model
     {
         $this->attributes['gambar'] = $value;
     }
+
+    public function translations()
+    {
+        return $this->hasMany(HomeSliderTranslation::class, 'slider_id', 'id');
+    }
 }

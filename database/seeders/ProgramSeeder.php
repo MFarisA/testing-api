@@ -9,9 +9,6 @@ use Faker\Factory as Faker;
 
 class ProgramSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
 {
     $faker = Faker::create();
@@ -25,7 +22,7 @@ class ProgramSeeder extends Seeder
             'thumbnail' => '/image-testing/burung-perkasa.jpg',
             'deskripsi' => $faker->paragraph(2),
             'deskripsi_pendek' => $faker->sentence,
-            'id_acara' => $faker->numberBetween(1, 5), // pastikan id_acara 1-5 tersedia di tb_acara
+            'id_acara' => $faker->numberBetween(1, 5),
             'tanggal' => $faker->date('Y-m-d', '2025-12-31'),
             'created_at' => now(),
             'updated_at' => now(),

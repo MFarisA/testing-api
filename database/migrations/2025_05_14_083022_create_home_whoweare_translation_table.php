@@ -13,18 +13,19 @@ return new class extends Migration
     {
         Schema::create('home_whoweare_translation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('whoweare_id')->constrained('v2_home_whoweare')->onDelete('cascade');
-            $table->foreignId('translation_id')->constrained('translations')->onDelete('cascade');
             $table->string('judul');
-            $table->longText('deskripsi')->nullable();
+            $table->longText('deskripsi');
             $table->string('gambar')->nullable();
             $table->string('motto1')->nullable();
             $table->string('motto2')->nullable();
             $table->string('motto3')->nullable();
-            $table->string('motto1sub')->nullable();
-            $table->string('motto2sub')->nullable();
-            $table->string('motto3sub')->nullable();
-            $table->timestamps();
+            $table->text('motto1sub')->nullable();
+            $table->text('motto2sub')->nullable();
+            $table->text('motto3sub')->nullable();
+            $table->integer('whoweare_id'); 
+
+            $table->foreign('whoweare_id')->references('id')->on('v2_home_whoweare')->onDelete('cascade');
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
         });
     }
 

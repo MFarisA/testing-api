@@ -11,9 +11,6 @@ use Faker\Factory as Faker;
 
 class MarketingSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
 {
     $faker = Faker::create();
@@ -27,7 +24,7 @@ class MarketingSeeder extends Seeder
             'foto' => '/image-testing/burung-perkasa.jpg',
             'isi' => $faker->paragraph(3),
             'video' => 'https://youtube.com/embed/' . $faker->regexify('[A-Za-z0-9_-]{11}'),
-            'user_id' => 1, // pastikan user_id 1 ada
+            'user_id' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ];

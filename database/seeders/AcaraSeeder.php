@@ -10,14 +10,10 @@ use Faker\Factory as Faker;
 
 class AcaraSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $faker = Faker::create();
 
-        // 3 data statis dulu
         $data = [
             [
                 'nama_acara' => 'Acara Ulang Tahun Perusahaan',
@@ -45,14 +41,13 @@ class AcaraSeeder extends Seeder
             ],
         ];
 
-        // Tambahkan 20 data dummy dengan Faker
         for ($i = 0; $i < 20; $i++) {
-            $namaAcara = $faker->sentence(3); // Contoh: "Konferensi Teknologi Global"
+            $namaAcara = $faker->sentence(3);
             $slug = Str::slug($namaAcara);
 
             $data[] = [
                 'nama_acara' => $namaAcara,
-                'thumbnail_acara' => $faker->imageUrl(640, 480, 'events', true, 'acara'), // gambar dummy
+                'thumbnail_acara' => $faker->imageUrl(640, 480, 'events', true, 'acara'), 
                 'description' => $faker->paragraph,
                 'path' => '/events/' . $slug,
                 'created_at' => now(),

@@ -24,6 +24,9 @@ class OurPrograms extends Model
     public function getThumbnailAttribute($value)
     {
         $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
         return $value ? $baseUrl . '/' . $value : null;
     }
 
@@ -31,4 +34,9 @@ class OurPrograms extends Model
     {
         $this->attributes['thumbnail'] = $value;
     }
+
+    public function translations()
+    {
+        return $this->hasMany(OurProgramsTranslation::class, 'ourprogram_id', 'id');
+    } 
 }

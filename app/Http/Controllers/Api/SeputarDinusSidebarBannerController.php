@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SeputarDinusSidebarBanner;
+use App\Models\SeputarDinusSidebarBannerTranslation;
+use App\Models\Translation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Config;
 
 class SeputarDinusSidebarBannerController extends Controller
 {
@@ -52,36 +53,108 @@ class SeputarDinusSidebarBannerController extends Controller
         ], Response::HTTP_OK);
     }
 
+    public function indexTranslations(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 20);
+            $currentPage = $request->input('current_page', 1);
+            $search = $request->input('search', null);
+            $sort = $request->input('sort', 'id_desc');
+            $languageCode = $request->input('language_code', null);
+
+            $query = SeputarDinusSidebarBannerTranslation::with('translation');
+
+            if ($search) {
+                $query->where('gambar', 'like', '%' . $search . '%');
+            }
+
+            if ($languageCode) {
+                $query->whereHas('translation', function ($q) use ($languageCode) {
+                    $q->where('code', $languageCode);
+                });
+            }
+
+            if ($sort === 'id_asc') {
+                $query->orderBy('id', 'asc');
+            } elseif ($sort === 'id_desc') {
+                $query->orderBy('id', 'desc');
+            }
+
+            $translations = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            return response()->json([
+                'current_page' => $translations->currentPage(),
+                'per_page' => $translations->perPage(),
+                'total' => $translations->total(),
+                'last_page' => $translations->lastPage(),
+                'next_page_url' => $translations->nextPageUrl(),
+                'prev_page_url' => $translations->previousPageUrl(),
+                'data' => $translations->items(),
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function getOnlyTranslationData($id_banner)
+    {
+        try {
+            $banner = SeputarDinusSidebarBanner::with('translations.translation')->find($id_banner);
+
+            if (!$banner) {
+                return response()->json(['message' => 'Banner not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $translations = $banner->translations;
+
+            return response()->json([
+                'message' => 'Translations retrieved successfully',
+                'data' => $translations,
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to retrieve translations',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        try {
+            $request->validate([
+                'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
 
-        if ($request->hasFile('gambar')) {
-            $file = $validated['gambar'];
-            $filename = now()->format('d-m_Y') . '_' . $file->getClientOriginalName();
-            $folderpath = 'sptdnsidebarbanner';
+            $data = $request->except('gambar');
 
-            if (!Storage::disk('tvku_storage')->exists($folderpath)) {
-                Storage::disk('tvku_storage')->makeDirectory($folderpath);
+            if ($request->hasFile('gambar')) {
+                $file = $request->file('gambar');
+                $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+                $folderPath = 'sptdinus/sidebarbanner';
+
+                if (!Storage::disk('tvku_storage')->exists($folderPath)) {
+                    Storage::disk('tvku_storage')->makeDirectory($folderPath);
+                }
+                $filePath = $folderPath . '/' . $filename;
+                Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+
+                $data['gambar'] = $filePath;
             }
-            $filePath = $folderpath . '/' .  $filename;
-            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $banner = SeputarDinusSidebarBanner::create($data);
 
-            try {
-                SeputarDinusSidebarBanner::create([
-                    'gambar' => Config('app.tvku_storage.base_url') . '/' . $filePath,
-                ]);
-
-                $latestBanner = SeputarDinusSidebarBanner::orderBy('id', 'desc')->first();
-
-                return response()->json(['message' => 'Banner successfully created', 'data' => $latestBanner], Response::HTTP_CREATED);
-            } catch (\Exception $e) {
-                return response()->json(['message' => 'Banner not created', 'error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-            }
+            return response()->json([
+                'message' => 'Banner successfully created',
+                'data' => $banner,
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        return response()->json(['message' => 'File not found'], Response::HTTP_BAD_REQUEST);
     }
 
 
@@ -104,33 +177,33 @@ class SeputarDinusSidebarBannerController extends Controller
             return response()->json(['message' => 'Banner not found'], Response::HTTP_NOT_FOUND);
         }
 
-         $request->validate([
+        $validated = $request->validate([
             'gambar' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
-        try {
-            if ($request->hasFile('gambar')) {
-                $file = $request->file('gambar');
-                $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
-                $folderPath = 'SeputarDinusSideBarbanner';
-                $filePath = $folderPath . '/' . $filename;
+        if ($request->hasFile('gambar')) {
+            $file = $request->file('gambar');
+            $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+            $folderPath = 'sptdinus/sidebarbanner';
+            $filePath = $folderPath . '/' . $filename;
 
-                if (!Storage::disk('tvku_storage')->exists($folderPath)) {
-                    Storage::disk('tvku_storage')->makeDirectory($folderPath);
-                }
-
-                if ($banner->gambar) {
-                    $oldPath = str_replace(config('app.tvku_storage.base_url') . '/', '', $banner->gambar);
-                    if (Storage::disk('tvku_storage')->exists($oldPath)) {
-                        Storage::disk('tvku_storage')->delete($oldPath);
-                    }
-                }
-
-                Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
-                $banner->gambar = config('app.tvku_storage.base_url') . '/' . $filePath;
+            if (!Storage::disk('tvku_storage')->exists($folderPath)) {
+                Storage::disk('tvku_storage')->makeDirectory($folderPath);
             }
 
+            if ($banner->gambar) {
+                $oldPath = str_replace(config('app.tvku_storage.base_url') . '/', '', $banner->gambar);
+                if (Storage::disk('tvku_storage')->exists($oldPath)) {
+                    Storage::disk('tvku_storage')->delete($oldPath);
+                }
+            }
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $banner->gambar = $filePath;
+        }
+
+        try {
             $banner->save();
+            $banner->gambar_url = config('app.tvku_storage.base_url') . '/' . $banner->gambar;
 
             return response()->json([
                 'message' => 'Banner updated successfully!',
@@ -148,14 +221,21 @@ class SeputarDinusSidebarBannerController extends Controller
         }
     }
 
-    public function destroy(SeputarDinusSidebarBanner $banner)
+    public function destroy($id)
     {
-        if ($banner) {
-            Storage::disk('public')->delete($banner->gambar);
+        try {
+            $banner = SeputarDinusSidebarBanner::findOrFail($id);
+            if ($banner->gambar && Storage::disk('tvku_storage')->exists($banner->gambar)) {
+                Storage::disk('tvku_storage')->delete($banner->gambar);
+            }
             $banner->delete();
-            return response()->json(['message' => 'Banner successfully deleted'], Response::HTTP_OK);
-        } else {
-            return response()->json(['message' => 'Banner not deleted'], Response::HTTP_BAD_REQUEST);
+
+            return response()->json(['message' => 'Banner deleted successfully'], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

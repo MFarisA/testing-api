@@ -10,6 +10,7 @@ class Translation extends Model
     use HasFactory;
 
     protected $table = 'translations';
+    public $timestamps = false;
 
     protected $fillable = [
         'name',
@@ -19,12 +20,17 @@ class Translation extends Model
 
     public function beritaTranslations()
     {
-        return $this->hasMany(BeritaTranslation::class, 'translation_id');
+        return $this->hasMany(BeritaTranslation::class, 'translation_id', 'id');
     }
 
     public function acaraTranslations()
     {
-        return $this->hasMany(AcaraTranslation::class, 'translation_id');
+        return $this->hasMany(AcaraTranslation::class, 'translation_id','id');
+    }
+
+    public function KategoriTranslations()
+    {
+        return $this->hasMany(KategoriTranslation::class, 'translation_id', 'id');
     }
 
     public function homeSliderTranslations()

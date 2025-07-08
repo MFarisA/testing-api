@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('acara_translation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('acara_id')->constrained('tb_acara', 'id_acara')->onDelete('cascade');
-            $table->foreignId('translation_id')->constrained('translations')->onDelete('cascade');
             $table->string('nama_acara');
             $table->string('thumbnail_acara')->nullable();
-            $table->longText('description')->nullable();
-            $table->timestamps();
-        });        
+            $table->text('description')->nullable();
+            $table->integer('acara_id'); 
+        
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
+        });
     }
 
     /**

@@ -15,13 +15,12 @@ class KategoriSeeder extends Seeder
 
         $kategori = [];
 
-        // Generate 23 kategori dummy dari Faker
         for ($i = 1; $i <= 23; $i++) {
             $namaKategori = ucfirst($faker->unique()->word());
             $kategori[] = [
                 'nama'      => $namaKategori,
                 'slug'      => Str::slug($namaKategori),
-                'top_nav'   => $faker->boolean(), // boolean true/false
+                'top_nav'   => $faker->boolean(),
                 'urutan'    => $i,
                 'created_at'=> now(),
                 'updated_at'=> now(),

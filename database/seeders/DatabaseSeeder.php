@@ -3,39 +3,32 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
         $this->call([
-            UserSeeder::class,
-            RolePermissionSeeder::class,
-            KategoriSeeder::class,
-            BeritaSeeder::class,
-            MarketingSeeder::class,
-            AcaraSeeder::class,
-            ProgramSeeder::class,
-            OurexpertiseSeeder::class,
-            Ourexpertise2Seeder::class,
-            HomeSliderSeeder::class,
-            HomeWhoWeAreSeeder::class,
-            OurProgramsSeeder::class,
-            RecentTrailerSeeder::class,
-            SptdinusSliderSeeder::class,
-            SptdinusSlidesTitleSeeder::class,
-            SptudinusSidebarBannerSeeder::class,
+            // UserSeeder::class,
+            // SuperAdminSeeder::class,
+            // KategoriSeeder::class,
+            // BeritaSeeder::class,
+            // MarketingSeeder::class,
+            // AcaraSeeder::class,
+            // ProgramSeeder::class,
+            // OurexpertiseSeeder::class,
+            // Ourexpertise2Seeder::class,
+            // HomeSliderSeeder::class,
+            // HomeWhoWeAreSeeder::class,
+            // OurProgramsSeeder::class,
+            // RecentTrailerSeeder::class,
+            // SptdinusSliderSeeder::class,
+            // SptdinusSlidesTitleSeeder::class,
+            // SptudinusSidebarBannerSeeder::class,
+            NotificationCategorySeeder::class,
+            // PermissionSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

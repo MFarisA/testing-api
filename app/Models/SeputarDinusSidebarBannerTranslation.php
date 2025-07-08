@@ -10,20 +10,21 @@ class SeputarDinusSidebarBannerTranslation extends Model
     use HasFactory;
 
     protected $table = 'spt_dinus_sidebar_banner_translation';
+    public $timestamps = false;
 
     protected $fillable = [
-        'spt_dinus_sidebar_banner_id',
+        'spt_dinus_banner_id',
         'translation_id',
         'gambar',
     ];
 
     public function sptDinusSidebarBanner()
     {
-        return $this->belongsTo(SeputarDinusSidebarBanner::class, 'spt_dinus_sidebar_banner_id');
+        return $this->belongsTo(SeputarDinusSidebarBanner::class, 'spt_dinus_banner_id', 'id');
     }
 
     public function translation()
     {
-        return $this->belongsTo(Translation::class, 'translation_id');
+        return $this->belongsTo(Translation::class, 'translation_id', 'id');
     }
 }

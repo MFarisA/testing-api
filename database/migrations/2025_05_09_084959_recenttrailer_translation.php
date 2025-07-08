@@ -6,24 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('recenttrailer_translation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('recenttrailer_id')->constrained('v2_recenttrailer')->onDelete('cascade');
-            $table->foreignId('translation_id')->constrained('translations')->onDelete('cascade');
             $table->string('judul');
-            $table->string('youtube_id')->nullable();
-            $table->timestamps();
+            $table->date('date')->nullable();
+            $table->string('youtube_id');
+            $table->integer('recenttrailer_id'); 
+
+            $table->foreign('recenttrailer_id')->references('id')->on('v2_recenttrailer')->onDelete('cascade');
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('recenttrailer_translation');

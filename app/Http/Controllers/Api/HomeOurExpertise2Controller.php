@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\HomeOurExpertise2;
+use App\Models\HomeOurexpertise2Translation;
+use App\Models\Translation;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
 
 class HomeOurExpertise2Controller extends Controller
 {
@@ -23,7 +28,7 @@ class HomeOurExpertise2Controller extends Controller
             return $currentPage;
         });
 
-        $query = HomeOurExpertise2::query();
+        $query = HomeOurExpertise2::with('translations.translation');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -54,45 +59,123 @@ class HomeOurExpertise2Controller extends Controller
         ], Response::HTTP_OK);
     }
 
+    public function getOnlyTranslationData(Request $request)
+    {
+        $langId = $request->input('translation_id');
+
+        if (!$langId) {
+            return response()->json(['message' => 'Translation ID is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $translation = Translation::find($langId);
+
+        if (!$translation) {
+            return response()->json(['message' => 'Translation not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $perPage = $request->input('per_page', 20);
+        $currentPage = $request->input('current_page', 1);
+        $search = $request->input('search', null);
+        $sort = $request->input('sort', 'id_desc');
+
+        Paginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $query = HomeOurExpertise2Translation::where('translation_id', $translation->id);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%')
+                    ->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($sort === 'asc' || $sort === 'desc') {
+            $query->orderBy('judul', $sort);
+        } elseif ($sort === 'id_asc') {
+            $query->orderBy('id', 'asc');
+        } elseif ($sort === 'id_desc') {
+            $query->orderBy('id', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        $data = $paginated->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'thumbnail' => $item->thumbnail,
+                'judul' => $item->judul,
+                'translation_id' => $item->translation_id,
+                'ourexpertise2_id' => $item->ourexpertise2_id,
+            ];
+        });
+
+        return response()->json([
+            'translation' => [
+                'id' => $translation->id,
+                'name' => $translation->name,
+                'code' => $translation->code,
+            ],
+            'current_page' => $paginated->currentPage(),
+            'per_page' => $paginated->perPage(),
+            'total' => $paginated->total(),
+            'last_page' => $paginated->lastPage(),
+            'next_page_url' => $paginated->nextPageUrl(),
+            'prev_page_url' => $paginated->previousPageUrl(),
+            'data' => $data,
+        ], Response::HTTP_OK);
+    }
+
     public function store(Request $request)
     {
-        try {
-            $validatedData = $request->validate([
-                'thumbnail' => 'required|file|mimes:jpg,jpeg,png|max:2048',
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'nullable|string|max:1000',
+        $validator = Validator::make($request->all(), [
+            'thumbnail' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'judul' => 'required|string|max:255',
+        ]);
+        
+        $allLangs = Translation::all();
+        foreach ($allLangs as $lang) {
+            $validator->addRules([
+                'judul' . $lang->code => 'nullable|string|max:255',
             ]);
+        }
 
-            $data = $request->except('thumbnail');
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
+        }
 
-            if ($request->hasFile('thumbnail')) {
-                $file = $request->file('thumbnail');
-                $filename = now()->format('d-m-Y') . '_' . Str::slug($request->judul) . '.' . $file->getClientOriginalExtension();
-                $folderPath = 'ourexpertise/thumbnails';
+        $data = $request->except('thumbnail', 'translations');
 
-                if (!Storage::disk('tvku_storage')->exists($folderPath)) {
-                    Storage::disk('tvku_storage')->makeDirectory($folderPath);
-                }
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+            $folderPath = 'home/ourexpertise2';
 
-                $filePath = $folderPath . '/' . $filename;
-                Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
-
-                $data['thumbnail'] = $filePath;
+            if (!Storage::disk('tvku_storage')->exists($folderPath)) {
+                Storage::disk('tvku_storage')->makeDirectory($folderPath);
             }
 
-            $expertise = HomeOurExpertise2::create($data);
-
-            return response()->json([
-                'message' => 'Expertise successfully created',
-                'data' => $expertise,
-            ], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $filePath = $folderPath . '/' . $filename;
+            Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
+            $data['thumbnail'] = $filePath;
         }
+
+        $expertise = HomeOurExpertise2::create($data);
+        foreach ($allLangs as $lang) {
+            $judulKey = 'judul' . $lang->code;
+
+            HomeOurexpertise2Translation::create([
+                'ourexpertise2_id' => $expertise->id,
+                'translation_id' => $lang->id,
+                'judul' => $request->input($judulKey),
+            ]);
+        }
+        return response()->json($expertise->load('translations.translation'), Response::HTTP_CREATED);
     }
+
 
     public function show(string $id)
     {
@@ -112,14 +195,20 @@ class HomeOurExpertise2Controller extends Controller
 
         $validated = $request->validate([
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'judul' => 'nullable|string|max:255',
-            'deskripsi' => 'nullable|string|max:1000',
+            'judul' => 'required|string|max:255',
         ]);
+
+        $allLangs = Translation::all();
+        foreach ($allLangs as $lang) {
+            $request->validate([
+                'judul' . $lang->code => 'nullable|string|max:255',
+            ]);
+        }
 
         if ($request->hasFile('thumbnail')) {
             $file = $request->file('thumbnail');
             $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
-            $folderPath = 'ourexpertise/thumbnails';
+            $folderPath = 'home/ourexpertise2';
             $filePath = $folderPath . '/' . $filename;
 
             if (!Storage::disk('tvku_storage')->exists($folderPath)) {
@@ -137,7 +226,7 @@ class HomeOurExpertise2Controller extends Controller
             $expertise->thumbnail = $filePath;
         }
 
-        $fields = ['judul', 'deskripsi'];
+        $fields = ['judul'];
 
         foreach ($fields as $field) {
             if (array_key_exists($field, $validated)) {
@@ -146,13 +235,26 @@ class HomeOurExpertise2Controller extends Controller
         }
 
         try {
-            $expertise->save();
-            $expertise->thumbnail = config('app.tvku_storage.base_url') . '/' . $expertise->thumbnail;
+            $expertise->update();
+            foreach ($allLangs as $lang) {
+                $judulKey =  'judul' . $lang->code;
 
-            return response()->json([
-                'message' => 'Updated successfully!',
-                'data' => $expertise,
-            ], Response::HTTP_OK);
+                $translation = HomeOurexpertise2Translation::where('ourexpertise2_id', $expertise->id)
+                    ->where('translation_id', $lang->id)
+                    ->first();
+                if ($translation) {
+                    $translation->update([
+                        'judul' => $request->input($judulKey),
+                    ]);
+                } else {
+                    HomeOurexpertise2Translation::create([
+                        'ourexpertise2_id' => $expertise->id,
+                        'translation_id' => $lang->id,
+                        'judul' => $request->input($judulKey),
+                    ]);
+                }
+            }
+            return response()->json($expertise->load('translations.translation'), Response::HTTP_OK);
         } catch (\Exception $e) {
             if (isset($filePath) && Storage::disk('tvku_storage')->exists($filePath)) {
                 Storage::disk('tvku_storage')->delete($filePath);
@@ -166,12 +268,37 @@ class HomeOurExpertise2Controller extends Controller
 
     public function destroy(string $id)
     {
-        $expertise = HomeOurExpertise2::find($id);
-        if (!$expertise) {
-            return response()->json(['message' => 'Data not found'], Response::HTTP_NOT_FOUND);
+        try {
+            $expertise = HomeOurExpertise2::findOrFail($id);
+
+            foreach ($expertise->translations as $translation) {
+                $translation->delete();;
+            }
+
+            if ($expertise->thumbnail && Storage::disk('tvku_storage')->exists($expertise->thumbnail)) {
+                Storage::disk('tvku_storage')->delete($expertise->thumbnail);
+            }
+            $expertise->delete();
+
+            return response()->json(['message' => 'Original data and its translations deleted successfully'], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function destroyTranslation($id)
+    {
+        $translation = HomeOurexpertise2Translation::find($id);
+
+        if (!$translation) {
+            return response()->json(['message' => 'Translation not found'], 404);
         }
 
-        $expertise->delete();
-        return response()->json(['message' => 'Data deleted successfully'], Response::HTTP_OK);
+        $translation->delete();
+
+        return response()->json(['message' => 'Translation deleted successfully'], 200);
     }
 }

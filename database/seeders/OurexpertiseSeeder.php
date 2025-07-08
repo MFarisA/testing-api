@@ -9,9 +9,6 @@ use Faker\Factory as Faker;
 
 class OurexpertiseSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
 {
     $faker = Faker::create();
@@ -21,8 +18,8 @@ class OurexpertiseSeeder extends Seeder
     for ($i = 0; $i < 23; $i++) {
         $data[] = [
             'thumbnail' => '/uploads/expertise/' . $faker->word . '.jpg',
-            'judul' => ucfirst($faker->catchPhrase), // contoh hasil: "Integrated Branding", "Dynamic Solutions"
-            'deskripsi' => $faker->sentence(10), // kalimat random
+            'judul' => ucfirst($faker->catchPhrase),
+            'deskripsi' => $faker->sentence(10),
             'created_at' => now(),
             'updated_at' => now(),
         ];

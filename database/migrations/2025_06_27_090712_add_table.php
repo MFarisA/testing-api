@@ -11,12 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('home_slider_translation', function (Blueprint $table) {
+        Schema::create('kategori_translations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('slider_id')->constrained('v2_home_slider')->onDelete('cascade');
+            $table->string('nama', 255);
+            $table->string('slug', 20);
+
+            $table->integer('id_kategori');
+            $table->foreign('id_kategori')->references('id_kategori')->on('tb_kategori')->onDelete('cascade');
             $table->foreignId('translation_id')->constrained('translations')->onDelete('cascade');
-            $table->string('gambar')->nullable();
-            $table->timestamps();
+            $table->timestamps(); 
         });
     }
 
@@ -25,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('home_slider_translation');
+        //
     }
 };

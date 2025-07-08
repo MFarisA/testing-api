@@ -9,9 +9,6 @@ use Faker\Factory as Faker;
 
 class OurProgramsSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
 {
     $faker = Faker::create();
@@ -21,7 +18,7 @@ class OurProgramsSeeder extends Seeder
     for ($i = 1; $i <= 23; $i++) {
         $data[] = [
             'thumbnail' => '/uploads/programs/' . $faker->word . '.jpg',
-            'judul' => ucfirst($faker->bs), // contoh: "Empower scalable channels"
+            'judul' => ucfirst($faker->bs), 
             'deskripsi' => $faker->sentence(12),
             'link' => '/programs/' . $faker->slug,
             'urutan' => $i,

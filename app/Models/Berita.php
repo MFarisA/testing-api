@@ -38,7 +38,6 @@ class Berita extends Model
         'waktu' => 'datetime',
         'waktu_publish' => 'datetime',
         'publish' => 'boolean',
-        'open' => 'boolean',
         'editor' => 'boolean',
         'library' => 'boolean',
         'redaktur' => 'boolean',
@@ -58,28 +57,46 @@ class Berita extends Model
 
     public function program()
     {
-        return $this->belongsTo(Program::class, 'program_id', 'id_program');
+        return $this->belongsTo(Program::class, 'program_id', 'id');
     }
 
     public function getCoverAttribute($value)
     {
         $baseUrl = config('app.tvku_storage.base_url');
         $thumbnailPath = config('app.tvku_storage.thumbnail_berita_path');
-    
-        return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . $value : null;
+        $pathMedia = $this->path_media;
+
+        return $value ? $baseUrl . '/' . trim($thumbnailPath, '/') . '/' . trim($pathMedia, '/') . '/' . ltrim($value, '/') : null;
     }
 
-    public static function storeCover($file, $oldFile = null)
+    public static function storeCover($file, $oldFile = null, $pathMedia = null)
     {
-        $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName(); 
-        $filePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . $filename;
+        $baseFolderPath = config('app.tvku_storage.thumbnail_berita_path');
 
-        if ($oldFile) {
-            Storage::disk('tvku_storage')->delete(config('app.tvku_storage.thumbnail_berita_path') . '/' . $oldFile);
+        if ($pathMedia) {
+            $baseFolderPath .= '/' . trim($pathMedia, '/');
+        }
+        $filename = now()->format('d-m-Y') . '_' . $file->getClientOriginalName();
+        $filePath = $baseFolderPath . '/' . $filename;
+
+        if (!Storage::disk('tvku_storage')->exists($baseFolderPath)) {
+            Storage::disk('tvku_storage')->makeDirectory($baseFolderPath);
         }
 
         Storage::disk('tvku_storage')->put($filePath, file_get_contents($file));
 
+        if ($oldFile) {
+            $oldFilePath = config('app.tvku_storage.thumbnail_berita_path') . '/' . trim($pathMedia, '/') . '/' . $oldFile;
+            if (Storage::disk('tvku_storage')->exists($oldFilePath)) {
+                Storage::disk('tvku_storage')->delete($oldFilePath);
+            }
+        }
+
         return $filename;
+    }
+
+    public function translations()
+    {
+        return $this->hasMany(BeritaTranslation::class, 'berita_id', 'id');
     }
 }

@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('marketing_translation', function (Blueprint $table) {
+        Schema::create('marketing_translations', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('marketing_id');
-            $table->string('locale')->index();
-            $table->string('judul')->nullable();
+            $table->text('judul');
+            $table->text('foto')->nullable();
             $table->text('isi')->nullable();
-            $table->timestamps();
-        
+            $table->integer('marketing_id'); 
+
             $table->foreign('marketing_id')->references('id')->on('tb_marketing')->onDelete('cascade');
-            $table->unique(['marketing_id', 'locale']);
+            $table->foreignId('translation_id')->references('id')->on('translations')->onDelete('cascade');
         });
     }
 
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('marketing_translation');
+        Schema::dropIfExists('marketing_translations');
     }
 };

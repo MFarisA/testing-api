@@ -21,7 +21,7 @@ class Ourexpertise2Seeder extends Seeder
     for ($i = 0; $i < 23; $i++) {
         $data[] = [
             'thumbnail' => '/uploads/expertise2/' . $faker->word . '.jpg',
-            'judul' => ucfirst($faker->bs), // atau bisa pakai $faker->jobTitle untuk judul
+            'judul' => ucfirst($faker->bs),
             'created_at' => now(),
             'updated_at' => now(),
         ];

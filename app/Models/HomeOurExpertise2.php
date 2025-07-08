@@ -28,4 +28,9 @@ class HomeOurExpertise2 extends Model
     {
         $this->attributes['thumbnail'] = $value;
     }
+
+    public function translations()
+    {
+        return $this->hasMany(HomeOurexpertise2Translation::class, 'ourexpertise2_id', 'id');
+    }
 }

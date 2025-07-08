@@ -9,9 +9,6 @@ use Faker\Factory as Faker;
 
 class HomeSliderSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $faker = Faker::create();
@@ -49,12 +46,11 @@ class HomeSliderSeeder extends Seeder
             ],
         ];
 
-        // Tambahkan 20 data dummy dengan Faker
         for ($i = 4; $i <= 23; $i++) {
             $data[] = [
                 'judul' => $faker->catchPhrase(),
                 'sub_judul' => $faker->sentence(6),
-                // 'gambar' => '/uploads/sliders/slider' . $i . '.jpg', // kamu bisa ganti ke $faker->imageUrl() kalau mau URL gambar dummy
+                // 'gambar' => '/uploads/sliders/slider' . $i . '.jpg', 
                 'gambar' => '/image-testing/burung-perkasa.jpg',
                 'urutan' => $i,
                 'url' => $faker->url(),

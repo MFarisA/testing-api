@@ -18,4 +18,9 @@ class RecentTrailer extends Model
         'date',
         'youtube_id',
     ];
+
+    public function translations()
+    {
+        return $this->hasMany(RecentTrailerTranslation::class, 'recenttrailer_id');
+    }
 }

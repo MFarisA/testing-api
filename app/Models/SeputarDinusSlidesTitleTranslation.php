@@ -10,20 +10,22 @@ class SeputarDinusSlidesTitleTranslation extends Model
     use HasFactory;
 
     protected $table = 'spt_dinus_slides_title_translation';
+    public $timestamps = false;
 
     protected $fillable = [
-        'spt_dinus_slides_title_id',
+        'spt_dinus_title_id',
         'translation_id',
         'judul',
+        'urutan',
     ];
 
     public function sptDinusSlidesTitle()
     {
-        return $this->belongsTo(SeputarDinusSlidesTitle::class, 'spt_dinus_slides_title_id');
+        return $this->belongsTo(SeputarDinusSlidesTitle::class, 'spt_dinus_title_id', 'id');
     }
 
     public function translation()
     {
-        return $this->belongsTo(Translation::class, 'translation_id');
+        return $this->belongsTo(Translation::class, 'translation_id', 'id');
     }
 }

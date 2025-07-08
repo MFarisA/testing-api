@@ -11,9 +11,6 @@ use Illuminate\Support\Str;
 
 class BeritaSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $faker = Faker::create();

@@ -29,11 +29,19 @@ class HomeWhoWeAre extends Model
     public function getGambarAttribute($value)
     {
         $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
         return $value ? $baseUrl . '/' . $value : null;
     }
 
     public function setGambarAttribute($value)
     {
         $this->attributes['gambar'] = $value;
+    }
+
+    public function translations()
+    {
+        return $this->hasMany(HomeWhoWeAreTranslation::class, 'whoweare_id', 'id');
     }
 }

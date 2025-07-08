@@ -1,0 +1,105 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+
+class PermissionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $permission = [
+            "acara.index",
+            "acara.show",
+            "berita.index",
+            "berita.show",
+            "iklan.index",
+            "iklan.show",
+            "jadwal-acara.index",
+            "jadwal-acara.show",
+            "kategori.index",
+            "kategori.show",
+            "program.index",
+            "program.show",
+            "program-acara.index",
+            "program-acara.show",
+            "users.index",
+            "users.show",
+            "our-programs.index",
+            "our-programs.show",
+            "recent-trailer.index",
+            "recent-trailer.show",
+            "seputar-dinus-slider.index",
+            "seputar-dinus-slider.show",
+            "seputar-dinus-sidebar-banner.index",
+            "seputar-dinus-sidebar-banner.show",
+            "seputar-dinus-slides-title.index",
+            "seputar-dinus-slides-title.show",
+            "our-expertise1.index",
+            "our-expertise1.show",
+            "our-expertise2.index",
+            "our-expertise2.show",
+            "slider.index",
+            "slider.show",
+            "who-we-are.index",
+            "who-we-are.show",
+            "acara.store",
+            "acara.update",
+            "acara.destroy",
+            "berita.store",
+            "berita.update",
+            "berita.destroy",
+            "iklan.store",
+            "iklan.update",
+            "iklan.destroy",
+            "jadwal-acara.store",
+            "jadwal-acara.update",
+            "jadwal-acara.destroy",
+            "kategori.store",
+            "kategori.update",
+            "kategori.destroy",
+            "program.store",
+            "program.update",
+            "program.destroy",
+            "program-acara.store",
+            "program-acara.update",
+            "program-acara.destroy",
+            "users.store",
+            "users.update",
+            "users.destroy",
+            "our-programs.store",
+            "our-programs.update",
+            "our-programs.destroy",
+            "recent-trailer.store",
+            "recent-trailer.update",
+            "recent-trailer.destroy",
+            "seputar-dinus-slider.store",
+            "seputar-dinus-slider.update",
+            "seputar-dinus-slider.destroy",
+            "seputar-dinus-sidebar-banner.store",
+            "seputar-dinus-sidebar-banner.update",
+            "seputar-dinus-sidebar-banner.destroy",
+            "seputar-dinus-slides-title.store",
+            "seputar-dinus-slides-title.update",
+            "seputar-dinus-slides-title.destroy",
+            "our-expertise1.store",
+            "our-expertise1.update",
+            "our-expertise1.destroy",
+            "our-expertise2.store",
+            "our-expertise2.update",
+            "our-expertise2.destroy",
+            "slider.store",
+            "slider.update",
+            "slider.destroy",
+            "who-we-are.store",
+            "who-we-are.update",
+            "who-we-are.destroy",
+        ];
+
+        foreach ($permission as $permission) {
+            Permission::findOrCreate($permission, 'api');
+        }
+    }
+}

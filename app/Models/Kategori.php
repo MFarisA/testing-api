@@ -19,4 +19,9 @@ class Kategori extends Model
         'top_nav',
         'urutan'
     ];
+
+    public function translations()
+    {
+        return $this->hasMany(KategoriTranslation::class, 'id_kategori', 'id_kategori');
+    }
 }

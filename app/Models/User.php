@@ -19,10 +19,14 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+
+    protected $guard_name = 'api';
+    
     protected $fillable = [
         'name',
         'email',
         'password',
+        'google_id',
     ];
 
     /**

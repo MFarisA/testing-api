@@ -43,4 +43,14 @@ class SeputarDinusSlider extends Model
     {
         $this->attributes['thumbnail_hover'] = $value;
     }
+
+    public function seputarDinusSlidesTitle()
+    {
+        return $this->belongsTo(SeputarDinusSliderTranslation::class, 'id_slides_title', 'id');
+    }
+
+    public function translations()
+    {
+        return $this->hasMany(SeputarDinusSliderTranslation::class, 'spt_dinus_slider_id');
+    }
 }

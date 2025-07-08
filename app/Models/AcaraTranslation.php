@@ -10,6 +10,7 @@ class AcaraTranslation extends Model
     use HasFactory;
 
     protected $table = 'acara_translation';
+    public $timestamps = false;
 
     protected $fillable = [
         'acara_id',
@@ -26,6 +27,15 @@ class AcaraTranslation extends Model
 
     public function translation()
     {
-        return $this->belongsTo(Translation::class, 'translation_id');
+        return $this->belongsTo(Translation::class, 'translation_id', 'id');
+    }
+
+    public function getThumbnailAcaraAttribute($value)
+    {
+        $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        return $value ? $baseUrl . '/' . $value : null;
     }
 }

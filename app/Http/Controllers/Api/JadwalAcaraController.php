@@ -70,6 +70,21 @@ class JadwalAcaraController extends Controller
             'waktu' => 'required|date_format:Y-m-d H:i:s',
         ]);
 
+        $overlap = JadwalAcara::where('id_hari', $request->id_hari)
+            ->where(function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('jam_awal', '<', $request->jam_akhir)
+                    ->where('jam_akhir', '>', $request->jam_awal);
+                });
+            })
+            ->exists();
+
+        if ($overlap) {
+            return response()->json([
+                'message' => 'Jadwal bertabrakan dengan acara lain pada hari dan jam yang sama.'
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $hariAcara = JadwalAcara::create($request->all());
         $hariAcara->load('hari');
 
@@ -104,6 +119,24 @@ class JadwalAcaraController extends Controller
             'uploader' => 'sometimes|required|exists:users,id',
             'waktu' => 'sometimes|required|date_format:Y-m-d H:i:s',
         ]);
+
+        $idHari = $request->input('id_hari', $acara->id_hari);
+        $jamAwal = $request->input('jam_awal', $acara->jam_awal);
+        $jamAkhir = $request->input('jam_akhir', $acara->jam_akhir);
+
+        $overlap = JadwalAcara::where('id_hari', $idHari)
+            ->where('id', '!=', $acara->id)
+            ->where(function ($query) use ($jamAwal, $jamAkhir) {
+                $query->where('jam_awal', '<', $jamAkhir)
+                    ->where('jam_akhir', '>', $jamAwal);
+            })
+            ->exists();
+
+        if ($overlap) {
+            return response()->json([
+                'message' => 'Jadwal bertabrakan dengan acara lain pada hari dan jam yang sama.'
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         $acara->update($request->all());
         $acara->load('hari');

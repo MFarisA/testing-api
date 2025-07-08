@@ -9,9 +9,6 @@ use Faker\Factory as Faker;
 
 class RecentTrailerSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
 {
     $faker = Faker::create();

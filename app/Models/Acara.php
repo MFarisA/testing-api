@@ -25,6 +25,9 @@ class Acara extends Model
     public function getThumbnailAcaraAttribute($value)
     {
         $baseUrl = config('app.tvku_storage.base_url', env('APP_URL') . '/storage');
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
         return $value ? $baseUrl . '/' . $value : null;
     }
 
@@ -34,5 +37,10 @@ class Acara extends Model
     public function setThumbnailAcaraAttribute($value)
     {
         $this->attributes['thumbnail_acara'] = $value;
+    }
+
+    public function translations()
+    {
+        return $this->hasMany(AcaraTranslation::class, 'acara_id', 'id_acara');
     }
 }
